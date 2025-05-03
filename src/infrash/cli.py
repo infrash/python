@@ -452,6 +452,150 @@ def solutions_list(ctx, filter, os):
         sys.exit(1)
 
 
+# Grupa poleceń dla zdalnych operacji
+@cli.group("remote", help="Zarządzanie zdalnymi wdrożeniami i operacjami.")
+@click.pass_context
+def remote_group(ctx):
+    """Grupa poleceń do zarządzania zdalnymi wdrożeniami i operacjami."""
+    pass
+
+
+@remote_group.command("deploy", help="Wdraża projekt na zdalnym hoście.")
+@click.option("--host", required=True, help="Adres IP lub nazwa hosta.")
+@click.option("--user", required=True, help="Nazwa użytkownika SSH.")
+@click.option("--password", help="Hasło SSH (opcjonalne jeśli używasz klucza).")
+@click.option("--key", help="Ścieżka do pliku klucza prywatnego SSH.")
+@click.option("--port", type=int, default=22, help="Port SSH (domyślnie: 22).")
+@click.option("--repo", required=True, help="URL repozytorium Git do wdrożenia.")
+@click.option("--branch", "-b", help="Gałąź do sklonowania (opcjonalne).")
+@click.option("--no-deps", is_flag=True, help="Nie instaluj zależności systemowych.")
+@click.pass_context
+def remote_deploy(ctx, host, user, password, key, port, repo, branch, no_deps):
+    """Wdraża projekt na zdalnym hoście."""
+    try:
+        from infrash.remote.remote_manager import RemoteManager
+        
+        remote_manager = RemoteManager()
+        success = remote_manager.deploy(
+            hostname=host,
+            username=user,
+            password=password,
+            key_filename=key,
+            port=port,
+            repo_url=repo,
+            branch=branch,
+            install_deps=not no_deps
+        )
+        
+        if success:
+            console.print(f"[bold green]Pomyślnie wdrożono projekt na hoście {host}![/bold green]")
+        else:
+            console.print(f"[bold red]Nie udało się wdrożyć projektu na hoście {host}.[/bold red]")
+            
+            # Uruchom diagnostykę w przypadku błędu
+            from infrash.core.diagnostics import Diagnostics
+            diagnostics = Diagnostics()
+            
+            # Sprawdź połączenie sieciowe
+            network_status = diagnostics.check_network_connectivity(host)
+            if not network_status["success"]:
+                console.print(f"[yellow]Problem z połączeniem sieciowym:[/yellow] {network_status['message']}")
+                console.print(f"[yellow]Sugestia:[/yellow] {network_status['suggestion']}")
+            
+            # Sprawdź dostępność narzędzi
+            tools_status = diagnostics.check_required_tools(["ssh", "git"])
+            if not tools_status["success"]:
+                console.print(f"[yellow]Brakujące narzędzia:[/yellow] {', '.join(tools_status['missing'])}")
+                console.print(f"[yellow]Sugestia:[/yellow] {tools_status['suggestion']}")
+            
+            sys.exit(1)
+    except ImportError as e:
+        logger.error(f"Brak wymaganych modułów: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] Brak wymaganych modułów. Instalowanie...")
+        
+        # Auto-naprawa - instalacja brakujących zależności
+        try:
+            import subprocess
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "paramiko"])
+            console.print("[green]Zainstalowano brakujące zależności. Spróbuj ponownie uruchomić polecenie.[/green]")
+        except Exception as install_error:
+            console.print(f"[bold red]Nie udało się zainstalować zależności:[/bold red] {str(install_error)}")
+        
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Błąd podczas wdrażania: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] {str(e)}")
+        sys.exit(1)
+
+
+@remote_group.command("run", help="Uruchamia polecenie na zdalnym hoście.")
+@click.option("--host", required=True, help="Adres IP lub nazwa hosta.")
+@click.option("--user", required=True, help="Nazwa użytkownika SSH.")
+@click.option("--password", help="Hasło SSH (opcjonalne jeśli używasz klucza).")
+@click.option("--key", help="Ścieżka do pliku klucza prywatnego SSH.")
+@click.option("--port", type=int, default=22, help="Port SSH (domyślnie: 22).")
+@click.option("--command", "-c", required=True, help="Polecenie do uruchomienia.")
+@click.pass_context
+def remote_run(ctx, host, user, password, key, port, command):
+    """Uruchamia polecenie na zdalnym hoście."""
+    try:
+        from infrash.remote.remote_manager import RemoteManager
+        
+        remote_manager = RemoteManager()
+        success, ssh_client = remote_manager.connect(
+            hostname=host,
+            username=user,
+            password=password,
+            key_filename=key,
+            port=port
+        )
+        
+        if not success or ssh_client is None:
+            console.print(f"[bold red]Nie udało się połączyć z hostem {host}.[/bold red]")
+            
+            # Uruchom diagnostykę w przypadku błędu
+            from infrash.core.diagnostics import Diagnostics
+            diagnostics = Diagnostics()
+            
+            # Sprawdź połączenie sieciowe
+            network_status = diagnostics.check_network_connectivity(host)
+            if not network_status["success"]:
+                console.print(f"[yellow]Problem z połączeniem sieciowym:[/yellow] {network_status['message']}")
+                console.print(f"[yellow]Sugestia:[/yellow] {network_status['suggestion']}")
+            
+            sys.exit(1)
+        
+        success, stdout, stderr = remote_manager.run_command(ssh_client, command)
+        
+        if success:
+            console.print(f"[bold green]Pomyślnie wykonano polecenie na hoście {host}![/bold green]")
+            if stdout:
+                console.print(Panel(stdout, title="Standardowe wyjście", border_style="green"))
+        else:
+            console.print(f"[bold red]Nie udało się wykonać polecenia na hoście {host}.[/bold red]")
+            if stderr:
+                console.print(Panel(stderr, title="Błędy", border_style="red"))
+            sys.exit(1)
+            
+    except ImportError as e:
+        logger.error(f"Brak wymaganych modułów: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] Brak wymaganych modułów. Instalowanie...")
+        
+        # Auto-naprawa - instalacja brakujących zależności
+        try:
+            import subprocess
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "paramiko"])
+            console.print("[green]Zainstalowano brakujące zależności. Spróbuj ponownie uruchomić polecenie.[/green]")
+        except Exception as install_error:
+            console.print(f"[bold red]Nie udało się zainstalować zależności:[/bold red] {str(install_error)}")
+        
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Błąd podczas wykonywania polecenia: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] {str(e)}")
+        sys.exit(1)
+
+
 # Główna funkcja wejściowa
 if __name__ == "__main__":
     cli(obj={})

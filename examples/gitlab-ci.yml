@@ -1,0 +1,68 @@
+# Przykładowy plik konfiguracyjny GitLab CI/CD dla projektów używających Infrash
+# Demonstruje integrację Infrash z procesami CI/CD
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  PYTHON_VERSION: "3.9"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+  INFRASH_CONFIG: "$CI_PROJECT_DIR/infrash-config.yaml"
+
+# Szablon dla zadań Python
+.python-job:
+  image: python:$PYTHON_VERSION
+  cache:
+    paths:
+      - .pip-cache/
+      - venv/
+  before_script:
+    - python -V
+    - pip install --upgrade pip
+    - pip install infrash
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+# Zadanie testowe
+test:
+  extends: .python-job
+  stage: test
+  script:
+    - infrash diagnose
+    - infrash repo status
+    - pytest tests/
+
+# Zadanie budowania
+build:
+  extends: .python-job
+  stage: build
+  script:
+    - infrash build --output dist/
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+# Zadanie wdrażania na środowisko testowe
+deploy-staging:
+  extends: .python-job
+  stage: deploy
+  script:
+    - infrash remote deploy --host $STAGING_HOST --user $STAGING_USER --key $SSH_PRIVATE_KEY --repo $CI_REPOSITORY_URL --branch $CI_COMMIT_REF_NAME
+  environment:
+    name: staging
+  only:
+    - develop
+
+# Zadanie wdrażania na środowisko produkcyjne
+deploy-production:
+  extends: .python-job
+  stage: deploy
+  script:
+    - infrash remote deploy --host $PRODUCTION_HOST --user $PRODUCTION_USER --key $SSH_PRIVATE_KEY --repo $CI_REPOSITORY_URL --branch $CI_COMMIT_REF_NAME
+  environment:
+    name: production
+  only:
+    - main
+  when: manual

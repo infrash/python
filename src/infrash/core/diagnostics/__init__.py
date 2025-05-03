@@ -5,7 +5,7 @@
 Moduł diagnostyczny infrash - inicjalizacja.
 """
 
-from infrash.core.diagnostics.base import Diagnostics
+from infrash.core.diagnostics import Diagnostics, DiagnosticsEngine
 from infrash.core.diagnostics.filesystem import _check_filesystem, _check_permissions
 from infrash.core.diagnostics.dependencies import _check_dependencies
 from infrash.core.diagnostics.configuration import _check_configuration
@@ -37,4 +37,4 @@ Diagnostics.solve_asyncio_error = solve_asyncio_error
 Diagnostics.fix_connection_issues = fix_connection_issues
 Diagnostics.analyze_hardware_issues = analyze_hardware_issues
 
-__all__ = ['Diagnostics']
+__all__ = ['Diagnostics', 'DiagnosticsEngine']

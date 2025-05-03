@@ -1,0 +1,77 @@
+# Przykładowy plik konfiguracyjny dla Infrash
+# Definiuje ustawienia dla różnych środowisk i typów projektów
+
+# Ustawienia globalne
+global:
+  log_level: INFO
+  log_file: ~/.infrash/logs/infrash.log
+  temp_dir: ~/.infrash/temp
+  cache_dir: ~/.infrash/cache
+  solutions_db: ~/.infrash/solutions.db
+
+# Ustawienia dla zdalnych hostów
+remote:
+  default_user: admin
+  default_port: 22
+  connection_timeout: 10
+  known_hosts_file: ~/.ssh/known_hosts
+  identity_file: ~/.ssh/id_rsa
+  hosts:
+    - name: raspberry-pi
+      host: 192.168.1.100
+      user: pi
+      port: 22
+    - name: dev-server
+      host: dev.example.com
+      user: developer
+      port: 22
+    - name: prod-server
+      host: prod.example.com
+      user: deployer
+      port: 22
+
+# Ustawienia dla repozytoriów
+repositories:
+  base_dir: ~/projects
+  default_branch: main
+  auto_update: true
+  repos:
+    - name: main-app
+      url: https://github.com/example/main-app.git
+      branch: develop
+    - name: api-service
+      url: https://github.com/example/api-service.git
+      branch: main
+    - name: frontend
+      url: https://github.com/example/frontend.git
+      branch: main
+
+# Ustawienia dla aplikacji
+applications:
+  python:
+    venv_dir: venv
+    requirements_file: requirements.txt
+    auto_install_deps: true
+    python_path: python3
+  node:
+    package_manager: npm
+    auto_install_deps: true
+    node_path: node
+  php:
+    composer: true
+    auto_install_deps: true
+    php_path: php
+
+# Ustawienia diagnostyki
+diagnostics:
+  auto_fix: true
+  check_on_startup: true
+  error_patterns:
+    - pattern: "ModuleNotFoundError: No module named '(.+)'"
+      solution: "Zainstaluj brakujący moduł: pip install {1}"
+    - pattern: "Error: Cannot find module '(.+)'"
+      solution: "Zainstaluj brakujący moduł: npm install {1}"
+    - pattern: "fatal: not a git repository"
+      solution: "Zainicjuj repozytorium Git: git init"
+    - pattern: "Connection refused"
+      solution: "Sprawdź, czy host jest dostępny i czy port jest otwarty"

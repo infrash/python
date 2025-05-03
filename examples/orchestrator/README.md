@@ -18,7 +18,7 @@ The Orchestrator is part of the UnitMCP package. You can install it by:
 
 ```bash
 # Clone the repository
-git clone https://github.com/UnitApi/infrash.git
+git clone https://github.com/infrash/python.git
 cd infrash
 
 # Install the package

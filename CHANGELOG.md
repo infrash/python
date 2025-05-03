@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2025-05-03
+
+### Added
+- Changes in examples/config.yaml
+- Changes in examples/deploy.sh
+- Changes in examples/diagnostics.json
+- Changes in examples/gitlab-ci.yml
+- Changes in src/infrash/core/diagnostics.py
+- Changes in src/infrash/remote/__init__.py
+- Changes in src/infrash/remote/remote_manager.py
+
 ## [0.1.5] - 2025-05-03
 
 ### Added

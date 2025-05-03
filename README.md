@@ -28,6 +28,7 @@ graph TB
     Orchestrator --> ProjectDetector[Project Detector]
     Orchestrator --> NetworkManager[Network Manager]
     Orchestrator --> DiagnosticsEngine[Diagnostics Engine]
+    Orchestrator --> RemoteManager[Remote Manager]
     
     GitManager --> Git[(Git Repositories)]
     DependencyManager --> PackageManagers[(Package Managers)]
@@ -52,6 +53,7 @@ sequenceDiagram
     participant DependencyManager
     participant NetworkManager
     participant DiagnosticsEngine
+    participant RemoteManager
     
     User->>CLI: Uruchom komendę
     CLI->>Orchestrator: Przetwórz projekt
@@ -67,10 +69,11 @@ sequenceDiagram
     alt Lokalne uruchomienie
         Orchestrator->>Orchestrator: Uruchom aplikację
     else Zdalne wdrożenie
-        Orchestrator->>NetworkManager: Połącz z hostem
-        NetworkManager-->>Orchestrator: Status połączenia
-        Orchestrator->>NetworkManager: Skonfiguruj środowisko
-        NetworkManager-->>Orchestrator: Status konfiguracji
+        Orchestrator->>RemoteManager: Wdrożenie zdalne
+        RemoteManager->>RemoteHost: Połącz z hostem
+        RemoteHost-->>RemoteManager: Status połączenia
+        RemoteManager->>RemoteHost: Skonfiguruj środowisko
+        RemoteHost-->>RemoteManager: Status konfiguracji
     end
     
     alt Wystąpił błąd
@@ -93,6 +96,7 @@ classDiagram
         +dependency_manager: DependencyManager
         +diagnostics: DiagnosticsEngine
         +network: NetworkManager
+        +remote: RemoteManager
         +clone_repository()
         +detect_project_type()
         +install_dependencies()
@@ -127,10 +131,16 @@ classDiagram
         +run_remote_command()
     }
     
+    class RemoteManager {
+        +deploy()
+        +run_command()
+    }
+    
     Orchestrator --> ProjectDetector
     Orchestrator --> DependencyManager
     Orchestrator --> DiagnosticsEngine
     Orchestrator --> NetworkManager
+    Orchestrator --> RemoteManager
 ```
 
 ### Przepływ diagnostyki
@@ -181,6 +191,84 @@ flowchart TD
 - **Zdalne wdrażanie**: instalacja i konfiguracja aplikacji na zdalnych maszynach (np. Raspberry Pi)
 - **Wieloplatformowe wsparcie**: uruchamianie aplikacji w różnych środowiskach (Python, Node.js, PHP, Shell, HTML)
 
+## Zdalne wdrażanie (Remote)
+
+Infrash umożliwia zdalne wdrażanie aplikacji na serwerach i urządzeniach IoT, takich jak Raspberry Pi. Funkcjonalność ta jest dostępna poprzez polecenie `infrash remote`.
+
+### Wdrażanie aplikacji na zdalnych hostach
+
+```bash
+infrash remote deploy --host <adres_ip> --user <użytkownik> --repo <url_repozytorium> [--key <ścieżka_do_klucza>] [--branch <gałąź>] [--no-deps]
+```
+
+Przykład:
+```bash
+infrash remote deploy --host 192.168.1.100 --user pi --repo https://github.com/example/app.git --branch main
+```
+
+### Uruchamianie poleceń na zdalnych hostach
+
+```bash
+infrash remote run --host <adres_ip> --user <użytkownik> --command "<polecenie>" [--key <ścieżka_do_klucza>]
+```
+
+Przykład:
+```bash
+infrash remote run --host 192.168.1.100 --user pi --command "ls -la /home/pi/app"
+```
+
+### Architektura modułu Remote
+
+```mermaid
+graph TB
+    CLI[CLI] --> RemoteManager[Remote Manager]
+    RemoteManager --> SSHClient[SSH Client]
+    RemoteManager --> EnvironmentSetup[Environment Setup]
+    RemoteManager --> CommandRunner[Command Runner]
+    
+    SSHClient --> RemoteHost[(Remote Host)]
+    EnvironmentSetup --> RemoteHost
+    CommandRunner --> RemoteHost
+    
+    style RemoteManager fill:#f9f,stroke:#333,stroke-width:2px
+    style SSHClient fill:#bbf,stroke:#333,stroke-width:2px
+    style EnvironmentSetup fill:#bfb,stroke:#333,stroke-width:2px
+    style CommandRunner fill:#fbf,stroke:#333,stroke-width:2px
+```
+
+### Przepływ zdalnego wdrażania
+
+```mermaid
+sequenceDiagram
+    participant User as Użytkownik
+    participant CLI
+    participant RemoteManager
+    participant SSHClient
+    participant RemoteHost
+    
+    User->>CLI: infrash remote deploy
+    CLI->>RemoteManager: Wywołaj deploy()
+    
+    RemoteManager->>SSHClient: Nawiąż połączenie SSH
+    SSHClient->>RemoteHost: Połącz z hostem
+    RemoteHost-->>SSHClient: Połączenie nawiązane
+    
+    RemoteManager->>RemoteHost: Zainstaluj zależności systemowe
+    RemoteHost-->>RemoteManager: Zależności zainstalowane
+    
+    RemoteManager->>RemoteHost: Sklonuj repozytorium
+    RemoteHost-->>RemoteManager: Repozytorium sklonowane
+    
+    RemoteManager->>RemoteHost: Utwórz środowisko wirtualne
+    RemoteHost-->>RemoteManager: Środowisko utworzone
+    
+    RemoteManager->>RemoteHost: Zainstaluj zależności Python
+    RemoteHost-->>RemoteManager: Zależności zainstalowane
+    
+    RemoteManager-->>CLI: Wdrożenie zakończone
+    CLI-->>User: Wyświetl status wdrożenia
+```
+
 ## Instalacja
 
 ### Instalacja z PyPI
@@ -192,7 +280,7 @@ pip install infrash
 ### Instalacja z repozytorium
 
 ```bash
-git clone https://github.com/UnitApi/infrash.git
+git clone https://github.com/infrash/python.git
 cd infrash
 pip install -e .
 ```
@@ -305,11 +393,13 @@ graph TB
         Orchestrator --> DependencyManager
         Orchestrator --> DiagnosticsEngine
         Orchestrator --> NetworkManager
+        Orchestrator --> RemoteManager
         
         ProjectDetector --> FilePatterns[(File Patterns)]
         DependencyManager --> ToolInstaller[Tool Installer]
         DiagnosticsEngine --> ErrorPatterns[(Error Patterns)]
         NetworkManager --> SSHClient[SSH Client]
+        RemoteManager --> RemoteHost[(Remote Host)]
         
         ToolInstaller --> SystemPackages[(System Packages)]
         ToolInstaller --> LanguagePackages[(Language Packages)]
@@ -324,6 +414,7 @@ graph TB
     style DependencyManager fill:#bfb,stroke:#333,stroke-width:2px
     style DiagnosticsEngine fill:#fbf,stroke:#333,stroke-width:2px
     style NetworkManager fill:#ff9,stroke:#333,stroke-width:2px
+    style RemoteManager fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 ## Zależności
