@@ -593,3 +593,193 @@ class DependencyResolver:
         except Exception as e:
             logger.error(f"Błąd podczas instalacji pakietów jeden po drugim: {str(e)}")
             return False
+
+    def check_dependencies(self, requirements_path: str, venv_path: str = None) -> Tuple[bool, List[Dict[str, Any]]]:
+        """
+        Sprawdza, czy wszystkie zależności z pliku requirements.txt są zainstalowane
+        i w odpowiednich wersjach.
+        
+        Args:
+            requirements_path: Ścieżka do pliku requirements.txt.
+            venv_path: Ścieżka do wirtualnego środowiska (opcjonalne).
+            
+        Returns:
+            Tuple (bool, List[Dict]): Status powodzenia i lista problemów z zależnościami.
+            Każdy problem jest słownikiem z kluczami: 'package', 'required_version', 'installed_version', 'status'.
+        """
+        try:
+            # Odczytaj plik requirements.txt
+            with open(requirements_path, 'r') as f:
+                requirements = f.readlines()
+            
+            packages = []
+            for line in requirements:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    packages.append(line)
+            
+            if not packages:
+                logger.warning("Brak pakietów do sprawdzenia")
+                return True, []
+            
+            logger.info(f"Sprawdzanie {len(packages)} pakietów...")
+            issues = []
+            all_ok = True
+            
+            # Pobierz listę zainstalowanych pakietów
+            if self.remote and self.ssh_client:
+                # Sprawdzenie na zdalnym urządzeniu
+                cmd = "pip list --format=json"
+                if venv_path:
+                    cmd = f"source {venv_path}/bin/activate && {cmd}"
+                
+                stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+                exit_code = stdout.channel.recv_exit_status()
+                
+                if exit_code != 0:
+                    error = stderr.read().decode()
+                    logger.error(f"Błąd podczas pobierania listy pakietów: {error}")
+                    return False, []
+                
+                installed_packages_json = stdout.read().decode()
+                try:
+                    installed_packages = json.loads(installed_packages_json)
+                    installed_dict = {pkg['name'].lower(): pkg['version'] for pkg in installed_packages}
+                except Exception as e:
+                    logger.error(f"Błąd podczas parsowania listy pakietów: {str(e)}")
+                    return False, []
+            else:
+                # Sprawdzenie lokalnie
+                try:
+                    process = subprocess.run(
+                        [sys.executable, "-m", "pip", "list", "--format=json"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True
+                    )
+                    
+                    if process.returncode != 0:
+                        logger.error(f"Błąd podczas pobierania listy pakietów: {process.stderr}")
+                        return False, []
+                    
+                    installed_packages = json.loads(process.stdout)
+                    installed_dict = {pkg['name'].lower(): pkg['version'] for pkg in installed_packages}
+                except Exception as e:
+                    logger.error(f"Błąd podczas parsowania listy pakietów: {str(e)}")
+                    return False, []
+            
+            # Sprawdź każdy pakiet
+            for package_spec in packages:
+                try:
+                    # Parsuj specyfikację pakietu
+                    match = re.match(r'^([a-zA-Z0-9_.-]+)([<>=!~]+)([a-zA-Z0-9_.-]+)(.*)$', package_spec)
+                    
+                    if match:
+                        package_name = match.group(1)
+                        operator = match.group(2)
+                        required_version = match.group(3)
+                        
+                        # Sprawdź, czy pakiet jest zainstalowany
+                        if package_name.lower() not in installed_dict:
+                            issues.append({
+                                'package': package_name,
+                                'required_version': required_version,
+                                'installed_version': None,
+                                'status': 'missing'
+                            })
+                            all_ok = False
+                            continue
+                        
+                        installed_version = installed_dict[package_name.lower()]
+                        
+                        # Sprawdź wersję
+                        if operator == '==':
+                            if installed_version != required_version:
+                                issues.append({
+                                    'package': package_name,
+                                    'required_version': required_version,
+                                    'installed_version': installed_version,
+                                    'status': 'version_mismatch'
+                                })
+                                all_ok = False
+                            else:
+                                issues.append({
+                                    'package': package_name,
+                                    'required_version': required_version,
+                                    'installed_version': installed_version,
+                                    'status': 'ok'
+                                })
+                        elif operator == '>=':
+                            try:
+                                if version.parse(installed_version) < version.parse(required_version):
+                                    issues.append({
+                                        'package': package_name,
+                                        'required_version': f'>={required_version}',
+                                        'installed_version': installed_version,
+                                        'status': 'version_too_low'
+                                    })
+                                    all_ok = False
+                                else:
+                                    issues.append({
+                                        'package': package_name,
+                                        'required_version': f'>={required_version}',
+                                        'installed_version': installed_version,
+                                        'status': 'ok'
+                                    })
+                            except Exception:
+                                # Jeśli nie można porównać wersji, załóż, że jest OK
+                                issues.append({
+                                    'package': package_name,
+                                    'required_version': f'>={required_version}',
+                                    'installed_version': installed_version,
+                                    'status': 'unknown'
+                                })
+                        # Dodaj obsługę innych operatorów (<=, >, <, ~=, !=) w podobny sposób
+                    else:
+                        # Jeśli nie ma specyfikacji wersji, sprawdź tylko, czy pakiet jest zainstalowany
+                        package_name = package_spec.split('#')[0].strip()  # Usuń komentarze
+                        package_name = re.split(r'[<>=!~]', package_name)[0].strip()  # Usuń operatory
+                        
+                        if package_name.lower() not in installed_dict:
+                            issues.append({
+                                'package': package_name,
+                                'required_version': 'any',
+                                'installed_version': None,
+                                'status': 'missing'
+                            })
+                            all_ok = False
+                        else:
+                            issues.append({
+                                'package': package_name,
+                                'required_version': 'any',
+                                'installed_version': installed_dict[package_name.lower()],
+                                'status': 'ok'
+                            })
+                except Exception as e:
+                    logger.warning(f"Błąd podczas sprawdzania pakietu {package_spec}: {str(e)}")
+                    issues.append({
+                        'package': package_spec,
+                        'required_version': 'unknown',
+                        'installed_version': 'unknown',
+                        'status': 'error',
+                        'error': str(e)
+                    })
+                    all_ok = False
+            
+            # Podsumowanie
+            missing_count = len([i for i in issues if i['status'] == 'missing'])
+            version_mismatch_count = len([i for i in issues if i['status'] in ['version_mismatch', 'version_too_low']])
+            
+            if missing_count > 0:
+                logger.warning(f"Brakuje {missing_count} pakietów")
+            
+            if version_mismatch_count > 0:
+                logger.warning(f"{version_mismatch_count} pakietów ma nieodpowiednią wersję")
+            
+            if all_ok:
+                logger.info("Wszystkie zależności są zainstalowane i w odpowiednich wersjach")
+            
+            return all_ok, issues
+        except Exception as e:
+            logger.error(f"Błąd podczas sprawdzania zależności: {str(e)}")
+            return False, []
