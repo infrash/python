@@ -11,13 +11,18 @@ import platform
 import importlib
 import pkg_resources
 import re
+import time
 from typing import Dict, List, Any, Optional, Union
 
 from infrash.utils.logger import get_logger
 from infrash.system.os_detect import detect_os, get_package_manager, is_admin
+from infrash.system.dependency_resolver import DependencyResolver
 
 # Inicjalizacja loggera
 logger = get_logger(__name__)
+
+# Inicjalizacja resolwera zależności
+dependency_resolver = DependencyResolver()
 
 def check_dependencies(path: str = ".") -> List[str]:
     """
@@ -863,6 +868,16 @@ def _install_from_requirements_txt(file_path: str, force: bool = False) -> bool:
         True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
     """
     try:
+        # Najpierw aktualizuj pip
+        dependency_resolver.update_pip()
+        
+        # Przetwórz plik requirements.txt
+        success, processed_file = dependency_resolver.process_requirements_file(file_path)
+        
+        if not success:
+            logger.warning(f"Nie udało się przetworzyć pliku {file_path}, używanie oryginalnego pliku.")
+            processed_file = file_path
+        
         # Używamy pip do instalacji zależności
         cmd = [sys.executable, "-m", "pip", "install"]
 
@@ -871,21 +886,36 @@ def _install_from_requirements_txt(file_path: str, force: bool = False) -> bool:
             cmd.append("--force-reinstall")
 
         # Dodajemy opcję -r i ścieżkę do pliku
-        cmd.extend(["-r", file_path])
+        cmd.extend(["-r", processed_file])
 
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
-            return False
-
-        logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
-        return True
+        # Instalacja z obsługą ponownych prób
+        max_retries = 3
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+                
+                if process.returncode == 0:
+                    logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie (próba {attempt+1}/{max_retries}).")
+                    return True
+                else:
+                    logger.error(f"Błąd podczas instalacji zależności z {file_path} (próba {attempt+1}/{max_retries}): {process.stderr}")
+            except Exception as e:
+                logger.error(f"Błąd podczas instalacji zależności z {file_path} (próba {attempt+1}/{max_retries}): {str(e)}")
+            
+            # Jeśli to nie ostatnia próba, poczekaj przed kolejną
+            if attempt < max_retries - 1:
+                logger.info(f"Ponowna próba za {retry_delay} sekund...")
+                time.sleep(retry_delay)
+        
+        logger.error(f"Nie udało się zainstalować zależności z {file_path} po {max_retries} próbach.")
+        return False
 
     except Exception as e:
         logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")

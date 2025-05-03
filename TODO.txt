@@ -71,3 +71,9 @@ dlatego rozbuduj autodiagnostyke w infrash
 dodaj więcej mermaid do readme aby bylo wiadomo jaka jest architektura, zasada działania, struktura
 
 zaktualizuj readme z odnosnikami do plików w folderach examples/* z opsiem
+
+
+klient podczas dzialania lokalnie czy zdalnie powinien zapisywac nie tylko logi do pliku w formacie [data].log,
+ale tez wszystkie komendy ktore wykonał i wyniki w pliku [data].sh
+aby mozna bylo wykonac to samo w przyszloci
+
