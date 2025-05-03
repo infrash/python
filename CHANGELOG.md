@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2025-05-03
+
+### Added
+- Changes in .github/workflows/ci.yml
+- Changes in .github/workflows/publish.yml
+- Changes in docs/index.md
+- Changes in docs/installation.md
+- Changes in docs/troubleshooting.md
+- Changes in docs/usage.md
+- Changes in examples/advanced_configuration.py
+- Changes in examples/basic_usage.py
+- Changes in src.md
+- Changes in src/infrash/__init__.py
+- Changes in src/infrash/__main__.py
+- Changes in src/infrash/cli.py
+- Changes in src/infrash/core/__init__.py
+- Changes in src/infrash/core/config.py
+- Changes in src/infrash/core/diagnostics.py
+- Changes in src/infrash/core/installer.py
+- Changes in src/infrash/core/repair.py
+- Changes in src/infrash/core/runner.py
+- Changes in src/infrash/data/__init__.py
+- Changes in src/infrash/data/solutions/__init__.py
+- Changes in src/infrash/data/solutions/arch.json
+- Changes in src/infrash/data/solutions/common.json
+- Changes in src/infrash/data/solutions/debian.json
+- Changes in src/infrash/data/solutions/redhat.json
+- Changes in src/infrash/repo/__init__.py
+- Changes in src/infrash/repo/clone.py
+- Changes in src/infrash/repo/git.py
+- Changes in src/infrash/repo/updater.py
+- Changes in src/infrash/system/__init__.py
+- Changes in src/infrash/system/dependency.py
+- Changes in src/infrash/system/os_detect.py
+- Changes in src/infrash/system/package_manager.py
+- Changes in src/infrash/system/service.py
+- Changes in src/infrash/utils/__init__.py
+- Changes in src/infrash/utils/ai_solver.py
+- Changes in src/infrash/utils/database.py
+- Changes in src/infrash/utils/logger.py
+- Changes in src/infrash/utils/network.py
+- Changes in tests/__init__.py
+- Changes in tests/test_diagnostics.py
+- Changes in tests/test_installer.py
+- Changes in tests/test_repo.py
+- Changes in tests/test_runner.py
+
 ## [0.1.1] - 2025-05-03
 
 ### Added
