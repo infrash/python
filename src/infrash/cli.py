@@ -19,6 +19,8 @@ from infrash.core.diagnostics import Diagnostics
 from infrash.core.repair import Repair
 from infrash.repo.git import GitRepo
 from infrash.system.os_detect import detect_os
+from infrash.system.dependency import check_dependencies, install_dependencies
+from infrash.system.dependency_resolver import DependencyResolver
 from infrash.utils.logger import setup_logger, get_logger
 
 # Inicjalizacja loggera
@@ -117,6 +119,181 @@ def repo_update(ctx, path, branch):
             sys.exit(1)
     except Exception as e:
         logger.error(f"Błąd podczas aktualizacji repozytorium: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] {str(e)}")
+        sys.exit(1)
+
+
+# Grupa poleceń dla zarządzania zależnościami
+@cli.group(name="deps", help="Zarządzanie zależnościami projektu.")
+@click.pass_context
+def deps_group(ctx):
+    """Grupa poleceń do zarządzania zależnościami projektu."""
+    pass
+
+
+@deps_group.command(name="check", help="Sprawdza zależności projektu.")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".", help="Ścieżka do projektu.")
+@click.pass_context
+def deps_check(ctx, path):
+    """Sprawdza zależności projektu."""
+    if not ctx.obj["QUIET"]:
+        console.print(Panel("[bold blue]Sprawdzanie zależności projektu[/bold blue]"))
+    
+    try:
+        # Sprawdź zależności
+        missing_deps = check_dependencies(path)
+        
+        if missing_deps:
+            console.print("[yellow]Brakujące zależności:[/yellow]")
+            for dep in missing_deps:
+                console.print(f"  - {dep}")
+            
+            console.print("\nMożesz zainstalować brakujące zależności za pomocą polecenia:")
+            console.print("[bold]infrash deps install[/bold]")
+        else:
+            console.print("[green]Wszystkie zależności są zainstalowane.[/green]")
+    
+    except Exception as e:
+        logger.error(f"Błąd podczas sprawdzania zależności: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] {str(e)}")
+        sys.exit(1)
+
+
+@deps_group.command(name="install", help="Instaluje zależności projektu.")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".", help="Ścieżka do projektu.")
+@click.option("--force", "-f", is_flag=True, help="Wymusza reinstalację zależności.")
+@click.option("--resolve", "-r", is_flag=True, help="Automatycznie rozwiązuje konflikty wersji.")
+@click.pass_context
+def deps_install(ctx, path, force, resolve):
+    """Instaluje zależności projektu."""
+    if not ctx.obj["QUIET"]:
+        console.print(Panel("[bold blue]Instalacja zależności projektu[/bold blue]"))
+    
+    try:
+        if resolve:
+            # Użyj zaawansowanego resolvera zależności
+            resolver = DependencyResolver()
+            
+            # Znajdź plik requirements.txt
+            requirements_path = os.path.join(path, "requirements.txt")
+            if not os.path.exists(requirements_path):
+                # Szukaj pliku requirements.txt w katalogu
+                for root, dirs, files in os.walk(path):
+                    if "requirements.txt" in files:
+                        requirements_path = os.path.join(root, "requirements.txt")
+                        break
+            
+            if not os.path.exists(requirements_path):
+                console.print("[bold red]Błąd:[/bold red] Nie znaleziono pliku requirements.txt")
+                sys.exit(1)
+            
+            console.print(f"Znaleziono plik requirements.txt: {requirements_path}")
+            
+            # Aktualizuj pip
+            console.print("Aktualizacja pip...")
+            resolver.update_pip()
+            
+            # Przetwórz plik requirements.txt
+            console.print("Przetwarzanie pliku requirements.txt...")
+            success, processed_path = resolver.process_requirements_file(requirements_path)
+            
+            if not success:
+                console.print("[bold red]Błąd:[/bold red] Nie udało się przetworzyć pliku requirements.txt")
+                sys.exit(1)
+            
+            # Instaluj zależności
+            console.print("Instalacja zależności...")
+            success = resolver.install_requirements_with_retry(processed_path, max_retries=3)
+            
+            if success:
+                console.print("[green]Zależności zostały zainstalowane pomyślnie.[/green]")
+            else:
+                console.print("[bold red]Błąd:[/bold red] Nie udało się zainstalować wszystkich zależności.")
+                sys.exit(1)
+        else:
+            # Użyj standardowej instalacji zależności
+            success = install_dependencies(path, force=force)
+            
+            if success:
+                console.print("[green]Zależności zostały zainstalowane pomyślnie.[/green]")
+            else:
+                console.print("[bold red]Błąd:[/bold red] Nie udało się zainstalować zależności.")
+                sys.exit(1)
+    
+    except Exception as e:
+        logger.error(f"Błąd podczas instalacji zależności: {str(e)}")
+        console.print(f"[bold red]Błąd:[/bold red] {str(e)}")
+        sys.exit(1)
+
+
+@deps_group.command(name="resolve", help="Rozwiązuje konflikty wersji zależności.")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".", help="Ścieżka do pliku requirements.txt.")
+@click.option("--output", "-o", type=click.Path(), help="Ścieżka do pliku wyjściowego.")
+@click.pass_context
+def deps_resolve(ctx, path, output):
+    """Rozwiązuje konflikty wersji zależności."""
+    if not ctx.obj["QUIET"]:
+        console.print(Panel("[bold blue]Rozwiązywanie konfliktów wersji zależności[/bold blue]"))
+    
+    try:
+        # Sprawdź, czy podana ścieżka to plik
+        if os.path.isdir(path):
+            # Szukaj pliku requirements.txt w katalogu
+            requirements_path = os.path.join(path, "requirements.txt")
+            if not os.path.exists(requirements_path):
+                # Szukaj pliku requirements.txt w projekcie
+                for root, dirs, files in os.walk(path):
+                    if "requirements.txt" in files:
+                        requirements_path = os.path.join(root, "requirements.txt")
+                        break
+        else:
+            requirements_path = path
+        
+        if not os.path.exists(requirements_path):
+            console.print("[bold red]Błąd:[/bold red] Nie znaleziono pliku requirements.txt")
+            sys.exit(1)
+        
+        console.print(f"Przetwarzanie pliku: {requirements_path}")
+        
+        # Inicjalizuj resolver zależności
+        resolver = DependencyResolver()
+        
+        # Przetwórz plik requirements.txt
+        success, processed_path = resolver.process_requirements_file(requirements_path, output)
+        
+        if success:
+            console.print(f"[green]Plik został przetworzony pomyślnie: {processed_path}[/green]")
+            
+            # Wyświetl zmiany
+            with open(requirements_path, "r") as f_orig:
+                orig_content = f_orig.readlines()
+            
+            with open(processed_path, "r") as f_proc:
+                proc_content = f_proc.readlines()
+            
+            if orig_content != proc_content:
+                console.print("\n[yellow]Wprowadzone zmiany:[/yellow]")
+                
+                table = Table(show_header=True)
+                table.add_column("Oryginalna wersja", style="cyan")
+                table.add_column("Nowa wersja", style="green")
+                
+                for orig_line, proc_line in zip(orig_content, proc_content):
+                    orig_line = orig_line.strip()
+                    proc_line = proc_line.strip()
+                    
+                    if orig_line != proc_line and not orig_line.startswith("#") and not proc_line.startswith("#"):
+                        table.add_row(orig_line, proc_line)
+                
+                console.print(table)
+            else:
+                console.print("[green]Nie wykryto konfliktów wersji.[/green]")
+        else:
+            console.print("[bold red]Błąd:[/bold red] Nie udało się przetworzyć pliku requirements.txt")
+            sys.exit(1)
+    
+    except Exception as e:
+        logger.error(f"Błąd podczas rozwiązywania konfliktów wersji: {str(e)}")
         console.print(f"[bold red]Błąd:[/bold red] {str(e)}")
         sys.exit(1)
 
@@ -469,11 +646,20 @@ def remote_group(ctx):
 @click.option("--repo", required=True, help="URL repozytorium Git do wdrożenia.")
 @click.option("--branch", "-b", help="Gałąź do sklonowania (opcjonalne).")
 @click.option("--no-deps", is_flag=True, help="Nie instaluj zależności systemowych.")
+@click.option("--resolve-deps", "-r", is_flag=True, help="Automatycznie rozwiązuj konflikty wersji zależności.")
+@click.option("--retry", type=int, default=3, help="Liczba prób ponownego połączenia w przypadku błędu.")
 @click.pass_context
-def remote_deploy(ctx, host, user, password, key, port, repo, branch, no_deps):
+def remote_deploy(ctx, host, user, password, key, port, repo, branch, no_deps, resolve_deps, retry):
     """Wdraża projekt na zdalnym hoście."""
     try:
         from infrash.remote.remote_manager import RemoteManager
+        
+        if not ctx.obj["QUIET"]:
+            console.print(Panel(f"[bold blue]Wdrażanie projektu na hoście {host}[/bold blue]"))
+            console.print(f"Repozytorium: {repo}")
+            if branch:
+                console.print(f"Gałąź: {branch}")
+            console.print(f"Automatyczne rozwiązywanie konfliktów wersji: {'Tak' if resolve_deps else 'Nie'}")
         
         remote_manager = RemoteManager()
         success = remote_manager.deploy(
@@ -484,7 +670,9 @@ def remote_deploy(ctx, host, user, password, key, port, repo, branch, no_deps):
             port=port,
             repo_url=repo,
             branch=branch,
-            install_deps=not no_deps
+            install_deps=not no_deps,
+            resolve_deps=resolve_deps,
+            max_retries=retry
         )
         
         if success:
@@ -508,6 +696,13 @@ def remote_deploy(ctx, host, user, password, key, port, repo, branch, no_deps):
                 console.print(f"[yellow]Brakujące narzędzia:[/yellow] {', '.join(tools_status['missing'])}")
                 console.print(f"[yellow]Sugestia:[/yellow] {tools_status['suggestion']}")
             
+            # Sugestie naprawy
+            console.print("\n[bold yellow]Sugestie rozwiązania problemów:[/bold yellow]")
+            console.print("1. Sprawdź połączenie sieciowe z hostem zdalnym.")
+            console.print("2. Upewnij się, że podane dane logowania są poprawne.")
+            console.print("3. Spróbuj użyć opcji --resolve-deps, aby automatycznie rozwiązywać konflikty wersji.")
+            console.print("4. Zwiększ liczbę prób ponownego połączenia za pomocą opcji --retry.")
+            
             sys.exit(1)
     except ImportError as e:
         logger.error(f"Brak wymaganych modułów: {str(e)}")
@@ -516,7 +711,7 @@ def remote_deploy(ctx, host, user, password, key, port, repo, branch, no_deps):
         # Auto-naprawa - instalacja brakujących zależności
         try:
             import subprocess
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "paramiko"])
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "paramiko", "requests", "packaging"])
             console.print("[green]Zainstalowano brakujące zależności. Spróbuj ponownie uruchomić polecenie.[/green]")
         except Exception as install_error:
             console.print(f"[bold red]Nie udało się zainstalować zależności:[/bold red] {str(install_error)}")

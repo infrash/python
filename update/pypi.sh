@@ -41,4 +41,3 @@ twine check dist/*
 
 echo -e "${GREEN}Publishing to PyPI...${NC}"
 twine upload dist/*
-
