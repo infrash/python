@@ -5,7 +5,7 @@ Moduł ten zawiera narzędzia do automatyzacji zarządzania infrastrukturą,
 diagnostyki problemów i wdrażania aplikacji z repozytoriów.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Twoje Imię"
 __email__ = "twoj.email@example.com"
 

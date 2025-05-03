@@ -1,45 +1,3 @@
-w folderach:
-./tools
-./udpate
-
-są przykłądowe rozwiązania, zaimplementuj je wszystkie do celow rozwiązaywania problemów i poniżej przedstawionych zadań jakie ma realizować
-podziel je na podfoldery, aby sprecyzowac platformę jeśli są dedykowane i problemy jakie rozwiazanują
-
-
-w plikach examples pokaz przyklad z polaczeniem z RPI w celu naprawy srodowiska python
-aby zainstalowac projekt z githuba:
-https://github.com/UnitApi/mcp.git
-lub
-git@github.com:UnitApi/mcp.git
-
-zainstaluj zaleznosci z requirements.txt jesli istnieje lub dla dowolnego innnego srodowiska ipaczek
-
-
-poszerz dzialanie runnera, aby instalowal zaleznosci i uruchamial  aplikacje i skrypty shell,  nodejs, python, php, static html poprzez podanie tylko adresu git,
-rozszerzenie powinni pobrac repo na wskazana maszyne (po adresie lub jako istnejacy client, server)
-powinna byc mozliwosc uruhcmiania automatycznie, zwlaszzca jesli sa tam rozne ci dla github lub gitlab,
-jesli sa jakies dane potrtzebne to interaktywnie user powinien byc zapytany, np. jesli chodzi o zmienne w .env do tego projektu git
-oraz gdy po uruchomieniu tej aplikacji z git cos nie dziala poprawnie, powinny byc logi i inteligentne podpowiedzi po analizie logow
-
-
-bazujac na aktualnym kodzie z folderu ./runner sprawdz czy ta implementacja runnera jest poprawna i przenies to co sie da do ./src/unitmcp aby przykładdy były proste
-a cała implementacja była w bibliotece, aby runner insttalowal zaleznosci i uruchamial  aplikacje i skrypty shell,  nodejs, python, php, static html poprzez podanie tylko adresu git,
-
-przenies src/unitmcp/orchestrator/README.md do examples/orchestrator/README.md i stworz kilka przykładów aoraz rozszerz dokumentacje
-
-
-
-zwieksz ilsoc przykladow dla kazdej komendy orchestratora w dokumenatcji: examples/orchestrator/README.md
-
-
-
-jak zanstalowac na rpi poprzez runner i orchestrator aplikacje web z elementami html, aby dziallo na skonfigurowanym przez runner porcie?
-
-
-do naprawiania w przyszlosci uzywaj wektoroweych metod zorientowanych na szybkie drzewo decyzyjne zwiazaane
-z inteligentnym przelcizaniem prawdopodobienstwa rozwiazania, zwklaszcza gdy czeste zmiany nic nie wnoszą
-stworz liste mozliwych algroytmow, ktore w innych roziwzaniach pozwalaja, znajdz biblitoeki, ktore by pomogły z github w szybszej diagnostyce naprwi ei realizacji celow tego projektu
-
 
 
 
@@ -81,3 +39,35 @@ Successfully installed bcrypt-4.3.0 paramiko-3.5.1 pynacl-1.5.0
 2025-05-03 21:35:26,416 - __main__ - ERROR - Instalacja na Raspberry Pi nie powiodła się.
 2025-05-03 21:35:26,416 - __main__ - INFO - Połączenie SSH zamknięte
 
+jak uruchomić to samo: python remote.py --host 192.168.1.154 --user pi --password pi --repo https://github.com/UnitApi/mcp.git
+ale z biblitoeką infrash?
+
+te nie dzialaja
+infrash remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git
+# lub
+./run.sh remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git
+
+vop infrash]$ infrash remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git
+Usage: infrash [OPTIONS] COMMAND [ARGS]...
+Try 'infrash --help' for help.
+
+Error: No such command 'remote'.
+(base) [tom@devop infrash]$ ./run.sh remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git
+Usage: run.py [OPTIONS] COMMAND [ARGS]...
+Try 'run.py --help' for help.
+
+Error: No such command 'remote'.
+(base) [tom@devop infrash]$
+
+
+infrash powinien miec wbudowane autodiagnostyke aby sprawdzić czy jest wszystko zainstalowane
+w momencie jak pojawia sie exception w nim, powinien miec ratunkowy skrypot, ktory bedzie dbal o to by infrash dzialal poprawnie
+exception nie powinno zaburzac dzialania skryptu, powinno sluszyc autodiagnostyce
+dlatego rozbuduj autodiagnostyke w infrash
+
+
+
+
+dodaj więcej mermaid do readme aby bylo wiadomo jaka jest architektura, zasada działania, struktura
+
+zaktualizuj readme z odnosnikami do plików w folderach examples/* z opsiem

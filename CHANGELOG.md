@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2025-05-03
+
+### Added
+- Changes in examples/orchestrator/README.md
+- Changes in examples/orchestrator/deploy_to_remote.py
+- Changes in examples/orchestrator/run_nodejs_app.py
+- Changes in examples/orchestrator/run_python_app.py
+- Changes in src/unitmcp/__init__.py
+- Changes in src/unitmcp/__main__.py
+- Changes in src/unitmcp/cli.py
+- Changes in src/unitmcp/orchestrator/__init__.py
+- Changes in src/unitmcp/orchestrator/dependency_manager.py
+- Changes in src/unitmcp/orchestrator/diagnostics.py
+- Changes in src/unitmcp/orchestrator/network.py
+- Changes in src/unitmcp/orchestrator/orchestrator.py
+- Changes in src/unitmcp/orchestrator/project_detector.py
+- Changes in tests/test_unitmcp_diagnostics.py
+- Changes in tests/test_unitmcp_network.py
+- Changes in tests/test_unitmcp_orchestrator.py
+
 ## [0.1.4] - 2025-05-03
 
 ### Added
