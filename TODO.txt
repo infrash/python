@@ -77,3 +77,23 @@ klient podczas dzialania lokalnie czy zdalnie powinien zapisywac nie tylko logi 
 ale tez wszystkie komendy ktore wykonał i wyniki w pliku [data].sh
 aby mozna bylo wykonac to samo w przyszloci
 
+do Integracji z CI/CD: obsługa GitLab CI i GitHub Actions dodaj więcej obnslugiwanych formatow jak terraform, jenkins, docker, kubernetes, ansible, gitlab, github, azure, aws, azure, google, docker, kubernetes, ansible, gitlab, github, azure, aws, azure, google, docker, kubernetes, ansible, gitlab, github, azure, aws
+
+
+
+ No module named 'infrash'
+(venv) (base) [tom@devop infrash]$ infrash solutions update
+Traceback (most recent call last):
+  File "/home/tom/github/UnitApi/infrash/venv/bin/infrash", line 5, in <module>
+    from infrash.__main__ import main
+  File "/home/tom/github/UnitApi/infrash/src/infrash/__init__.py", line 13, in <module>
+    from infrash.core.runner import Runner
+  File "/home/tom/github/UnitApi/infrash/src/infrash/core/__init__.py", line 8, in <module>
+    from infrash.core.diagnostics import Diagnostics
+  File "/home/tom/github/UnitApi/infrash/src/infrash/core/diagnostics/__init__.py", line 8, in <module>
+    from infrash.core.diagnostics.base import Diagnostics
+  File "/home/tom/github/UnitApi/infrash/src/infrash/core/diagnostics/base.py", line 22, in <module>
+    from infrash.system.dependency import check_dependencies
+  File "/home/tom/github/UnitApi/infrash/src/infrash/system/dependency.py", line 12, in <module>
+    import pkg_resources
+ModuleNotFoundError: No module named 'pkg_resources'

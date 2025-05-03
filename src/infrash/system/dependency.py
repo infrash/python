@@ -8,11 +8,34 @@ import os
 import sys
 import subprocess
 import platform
-import importlib
-import pkg_resources
 import re
 import time
 from typing import Dict, List, Any, Optional, Union
+
+# Try to import critical dependencies, install them if missing
+try:
+    import importlib
+    import pkg_resources
+except ImportError as e:
+    # Get the missing module name from the error message
+    missing_module = str(e).split("'")[-2] if "'" in str(e) else str(e).split()[-1]
+    print(f"Critical dependency missing: {missing_module}. Attempting to install...")
+    
+    try:
+        # Install the missing dependency
+        subprocess.check_call([sys.executable, "-m", "pip", "install", 
+                              "setuptools" if missing_module == "pkg_resources" else missing_module])
+        
+        # Retry the import after installation
+        if missing_module == "pkg_resources":
+            import pkg_resources
+        elif missing_module == "importlib":
+            import importlib
+        
+        print(f"Successfully installed missing dependency: {missing_module}")
+    except Exception as install_error:
+        print(f"Failed to install missing dependency: {missing_module}. Error: {install_error}")
+        # Continue execution, the error will be properly logged later
 
 from infrash.utils.logger import get_logger
 from infrash.system.os_detect import detect_os, get_package_manager, is_admin
@@ -23,6 +46,62 @@ logger = get_logger(__name__)
 
 # Inicjalizacja resolwera zależności
 dependency_resolver = DependencyResolver()
+
+def ensure_critical_dependencies():
+    """
+    Sprawdza i instaluje krytyczne zależności wymagane do działania Infrash.
+    
+    Ta funkcja jest wywoływana automatycznie przy starcie, aby zapewnić,
+    że wszystkie niezbędne zależności są dostępne.
+    
+    Returns:
+        bool: True jeśli wszystkie krytyczne zależności są dostępne lub zostały zainstalowane,
+              False w przypadku niepowodzenia.
+    """
+    critical_packages = [
+        "setuptools",  # Zawiera pkg_resources
+        "wheel",
+        "pip",
+        "requests"
+    ]
+    
+    success = True
+    for package in critical_packages:
+        try:
+            if package == "setuptools":
+                # Specjalny przypadek dla pkg_resources
+                try:
+                    import pkg_resources
+                except ImportError:
+                    logger.warning(f"Brak krytycznej zależności: pkg_resources (setuptools). Instalowanie...")
+                    try:
+                        subprocess.check_call([sys.executable, "-m", "pip", "install", "setuptools"])
+                        import pkg_resources  # Próba ponownego importu
+                        logger.info("Pomyślnie zainstalowano setuptools (pkg_resources)")
+                    except Exception as e:
+                        logger.error(f"Nie udało się zainstalować setuptools: {e}")
+                        success = False
+            else:
+                # Standardowa weryfikacja dla innych pakietów
+                try:
+                    __import__(package)
+                except ImportError:
+                    logger.warning(f"Brak krytycznej zależności: {package}. Instalowanie...")
+                    try:
+                        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                        __import__(package)  # Próba ponownego importu
+                        logger.info(f"Pomyślnie zainstalowano {package}")
+                    except Exception as e:
+                        logger.error(f"Nie udało się zainstalować {package}: {e}")
+                        success = False
+        except Exception as e:
+            logger.error(f"Błąd podczas weryfikacji zależności {package}: {e}")
+            success = False
+    
+    return success
+
+# Wywołanie funkcji zapewniającej krytyczne zależności przy importowaniu modułu
+ensure_critical_dependencies()
 
 def check_dependencies(path: str = ".") -> List[str]:
     """
@@ -827,6 +906,28 @@ def uninstall_dependency(package_name: str, package_manager: Optional[str] = Non
     except Exception as e:
         logger.error(f"Błąd podczas odinstalowywania pakietu {package_name}: {str(e)}")
         return False
+
+def install_dependencies(dependencies: List[str], force: bool = False) -> bool:
+    """
+    Instaluje listę zależności.
+
+    Args:
+        dependencies: Lista zależności do zainstalowania.
+        force: Czy wymusić reinstalację istniejących zależności.
+
+    Returns:
+        True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
+    """
+    logger.info(f"Instalowanie {len(dependencies)} zależności...")
+    
+    success = True
+    for dep in dependencies:
+        logger.info(f"Instalowanie zależności: {dep}")
+        if not install_dependency(dep):
+            logger.error(f"Nie udało się zainstalować zależności: {dep}")
+            success = False
+    
+    return success
 
 def install_dependencies_from_file(file_path: str, force: bool = False) -> bool:
     """

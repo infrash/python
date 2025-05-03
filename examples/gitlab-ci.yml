@@ -2,6 +2,7 @@
 # Demonstruje integrację Infrash z procesami CI/CD
 
 stages:
+  - validate
   - test
   - build
   - deploy
@@ -10,6 +11,10 @@ variables:
   PYTHON_VERSION: "3.9"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
   INFRASH_CONFIG: "$CI_PROJECT_DIR/infrash-config.yaml"
+  # Zmienne dla dostawców chmury
+  AWS_DEFAULT_REGION: "eu-central-1"
+  AZURE_RESOURCE_GROUP: "infrash-resources"
+  GCP_PROJECT_ID: "infrash-project"
 
 # Szablon dla zadań Python
 .python-job:
@@ -23,6 +28,118 @@ variables:
     - pip install --upgrade pip
     - pip install infrash
     - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+# Szablony dla różnych formatów
+.terraform-job:
+  image: hashicorp/terraform:latest
+  variables:
+    TF_IN_AUTOMATION: "true"
+  before_script:
+    - terraform --version
+
+.docker-job:
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker --version
+
+.kubernetes-job:
+  image: bitnami/kubectl:latest
+  before_script:
+    - kubectl version --client
+
+.ansible-job:
+  image: cytopia/ansible:latest
+  before_script:
+    - ansible --version
+
+.jenkins-job:
+  image: jenkins/jenkins:lts-alpine
+  before_script:
+    - java -version
+
+.gitlab-job:
+  image: gitlab/gitlab-runner:latest
+  before_script:
+    - gitlab-runner --version
+
+.github-job:
+  image: github/github-runner:latest
+  before_script:
+    - github-runner --version
+
+# Walidacja dla różnych formatów
+validate-terraform:
+  extends: .terraform-job
+  stage: validate
+  script:
+    - cd terraform && terraform init -backend=false
+    - terraform validate
+  only:
+    changes:
+      - terraform/**/*
+
+validate-docker:
+  extends: .docker-job
+  stage: validate
+  script:
+    - docker build -t test-image .
+  only:
+    changes:
+      - Dockerfile
+      - docker/**/*
+
+validate-kubernetes:
+  extends: .kubernetes-job
+  stage: validate
+  script:
+    - for file in kubernetes/*.yaml; do kubectl apply --validate=true --dry-run=client -f $file; done
+  only:
+    changes:
+      - kubernetes/**/*
+
+validate-ansible:
+  extends: .ansible-job
+  stage: validate
+  script:
+    - ansible-lint ansible/
+  only:
+    changes:
+      - ansible/**/*
+
+validate-aws:
+  extends: .python-job
+  stage: validate
+  script:
+    - pip install awscli
+    - for template in aws/*.yaml aws/*.json; do aws cloudformation validate-template --template-body file://$template; done
+  only:
+    changes:
+      - aws/**/*
+
+validate-azure:
+  extends: .python-job
+  stage: validate
+  script:
+    - pip install azure-cli
+    - for template in azure/*.json; do az deployment group validate --resource-group $AZURE_RESOURCE_GROUP --template-file $template; done
+  only:
+    changes:
+      - azure/**/*
+
+validate-gcp:
+  extends: .python-job
+  stage: validate
+  script:
+    - pip install google-cloud-sdk
+    - for template in gcp/*.yaml; do gcloud deployment-manager deployments validate --config=$template --project=$GCP_PROJECT_ID; done
+  only:
+    changes:
+      - gcp/**/*
 
 # Zadanie testowe
 test:

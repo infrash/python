@@ -36,10 +36,10 @@ graph TB
     
     NetworkManager --> RemoteHosts[(Remote Hosts)]
     
-    style CLI fill:#f9f,stroke:#333,stroke-width:2px
-    style Runner fill:#bbf,stroke:#333,stroke-width:2px
-    style Diagnostics fill:#bfb,stroke:#333,stroke-width:2px
-    style Orchestrator fill:#fbf,stroke:#333,stroke-width:2px
+    style CLI fill:#f9f,stroke:#333,stroke-width:2px,color:#333
+    style Runner fill:#bbf,stroke:#333,stroke-width:2px,color:#333
+    style Diagnostics fill:#bfb,stroke:#333,stroke-width:2px,color:#333
+    style Orchestrator fill:#fbf,stroke:#333,stroke-width:2px,color:#333
 ```
 
 ### Przepływ danych w systemie
@@ -174,19 +174,19 @@ flowchart TD
     AutoFix --> End([Koniec])
     ManualFix --> End
     
-    style Start fill:#f96,stroke:#333,stroke-width:2px
-    style End fill:#f96,stroke:#333,stroke-width:2px
-    style GenerateSuggestions fill:#bbf,stroke:#333,stroke-width:2px
-    style AutoFix fill:#bfb,stroke:#333,stroke-width:2px
+    style Start fill:#f96,stroke:#333,stroke-width:2px,color:#333
+    style End fill:#f96,stroke:#333,stroke-width:2px,color:#333
+    style GenerateSuggestions fill:#bbf,stroke:#333,stroke-width:2px,color:#333
+    style AutoFix fill:#bfb,stroke:#333,stroke-width:2px,color:#333
 ```
 
 ## Główne funkcje
 
 - **Zarządzanie repozytoriami**: klonowanie, aktualizacja, synchronizacja
-- **Zarządzanie zależnościami**: automatyczne wykrywanie i instalacja wymaganych pakietów
+- **Zarządzanie zależnościami**: automatyczne wykrywanie, instalacja i rozwiązywanie konfliktów wersji pakietów
 - **Diagnostyka i naprawa**: inteligentne wykrywanie i rozwiązywanie problemów
 - **Automatyzacja wdrożeń**: instalacja, uruchamianie, monitorowanie aplikacji
-- **Integracja z CI/CD**: obsługa GitLab CI i GitHub Actions
+- **Integracja z CI/CD**: obsługa GitLab CI, GitHub Actions, Terraform, Jenkins, Docker, Kubernetes, Ansible, AWS, Azure i Google Cloud
 - **Baza danych rozwiązań**: aktualizowana baza wiedzy dotycząca popularnych problemów
 - **Zdalne wdrażanie**: instalacja i konfiguracja aplikacji na zdalnych maszynach (np. Raspberry Pi)
 - **Wieloplatformowe wsparcie**: uruchamianie aplikacji w różnych środowiskach (Python, Node.js, PHP, Shell, HTML)
@@ -194,6 +194,28 @@ flowchart TD
 ## Zdalne wdrażanie (Remote)
 
 Infrash umożliwia zdalne wdrażanie aplikacji na serwerach i urządzeniach IoT, takich jak Raspberry Pi. Funkcjonalność ta jest dostępna poprzez polecenie `infrash remote`.
+
+## Integracja z CI/CD
+
+Infrash oferuje rozbudowaną integrację z popularnymi narzędziami CI/CD, umożliwiając automatyzację procesów testowania, budowania i wdrażania aplikacji. Obsługiwane formaty i platformy:
+
+### Systemy CI/CD
+- **GitLab CI**: Pełna integracja z GitLab CI/CD pipeline
+- **GitHub Actions**: Zautomatyzowane workflow dla repozytoriów GitHub
+- **Jenkins**: Integracja z Jenkins Pipeline
+
+### Infrastruktura jako kod
+- **Terraform**: Szablony do zarządzania infrastrukturą w chmurze
+- **Ansible**: Automatyzacja konfiguracji i wdrażania
+- **Kubernetes**: Orkiestracja kontenerów
+- **Docker**: Konteneryzacja aplikacji
+
+### Dostawcy chmury
+- **AWS**: Integracja z Amazon Web Services (CloudFormation)
+- **Azure**: Integracja z Microsoft Azure (ARM Templates)
+- **Google Cloud**: Integracja z Google Cloud Platform (Deployment Manager)
+
+Przykłady konfiguracji dla wszystkich obsługiwanych formatów można znaleźć w katalogu `examples/templates/`.
 
 ### Wdrażanie aplikacji na zdalnych hostach
 
@@ -230,10 +252,10 @@ graph TB
     EnvironmentSetup --> RemoteHost
     CommandRunner --> RemoteHost
     
-    style RemoteManager fill:#f9f,stroke:#333,stroke-width:2px
-    style SSHClient fill:#bbf,stroke:#333,stroke-width:2px
-    style EnvironmentSetup fill:#bfb,stroke:#333,stroke-width:2px
-    style CommandRunner fill:#fbf,stroke:#333,stroke-width:2px
+    style RemoteManager fill:#f9f,stroke:#333,stroke-width:2px,color:#333
+    style SSHClient fill:#bbf,stroke:#333,stroke-width:2px,color:#333
+    style EnvironmentSetup fill:#bfb,stroke:#333,stroke-width:2px,color:#333
+    style CommandRunner fill:#fbf,stroke:#333,stroke-width:2px,color:#333
 ```
 
 ### Przepływ zdalnego wdrażania
@@ -363,6 +385,14 @@ infrash remote deploy --host 192.168.188.154 --user pi --repo https://github.com
 ./run.sh remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git
 ```
 
+### Zdalne wdrażanie z rozwiązywaniem konfliktów zależności
+
+```bash
+infrash remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git --resolve-deps
+# lub
+./run.sh remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git --resolve-deps
+```
+
 ### Uruchomienie aplikacji z repozytorium Git
 
 ```bash
@@ -409,12 +439,12 @@ graph TB
     Orchestrator --> RunningApps[(Running Applications)]
     NetworkManager --> RemoteHosts[(Remote Hosts)]
     
-    style Orchestrator fill:#f9f,stroke:#333,stroke-width:2px
-    style ProjectDetector fill:#bbf,stroke:#333,stroke-width:2px
-    style DependencyManager fill:#bfb,stroke:#333,stroke-width:2px
-    style DiagnosticsEngine fill:#fbf,stroke:#333,stroke-width:2px
-    style NetworkManager fill:#ff9,stroke:#333,stroke-width:2px
-    style RemoteManager fill:#ff9,stroke:#333,stroke-width:2px
+    style Orchestrator fill:#f9f,stroke:#333,stroke-width:2px,color:#333
+    style ProjectDetector fill:#bbf,stroke:#333,stroke-width:2px,color:#333
+    style DependencyManager fill:#bfb,stroke:#333,stroke-width:2px,color:#333
+    style DiagnosticsEngine fill:#fbf,stroke:#333,stroke-width:2px,color:#333
+    style NetworkManager fill:#ff9,stroke:#333,stroke-width:2px,color:#333
+    style RemoteManager fill:#ff9,stroke:#333,stroke-width:2px,color:#333
 ```
 
 ## Zależności
@@ -446,12 +476,92 @@ Jeśli napotkasz błąd `No module named 'unitmcp'`, oznacza to, że próbujesz 
 
 2. Używać tylko funkcji infrash, które nie wymagają unitmcp.
 
+## Zarządzanie zależnościami
+
+Infrash oferuje zaawansowany system zarządzania zależnościami, który umożliwia:
+
+- Automatyczne wykrywanie i instalację wymaganych pakietów
+- Inteligentne rozwiązywanie konfliktów wersji pakietów
+- Sprawdzanie zgodności zainstalowanych pakietów z wymaganiami projektu
+- Automatyczne naprawianie problemów z zależnościami
+- Obsługę ponownych prób instalacji w przypadku problemów sieciowych
+
+### Sprawdzanie zależności
+
+```bash
+infrash deps check
+```
+
+Polecenie to sprawdza, czy wszystkie wymagane zależności są zainstalowane i w odpowiednich wersjach. Wyświetla szczegółowy raport o stanie każdego pakietu.
+
+### Instalacja zależności
+
+```bash
+infrash deps install [--resolve]
+```
+
+Instaluje wszystkie zależności projektu. Opcja `--resolve` włącza automatyczne rozwiązywanie konfliktów wersji pakietów.
+
+### Rozwiązywanie konfliktów wersji
+
+```bash
+infrash deps resolve
+```
+
+Automatycznie rozwiązuje konflikty wersji pakietów w pliku requirements.txt, znajdując najbliższe dostępne wersje lub wybierając najnowszą wersję w przypadku konfliktów.
+
+### Architektura systemu zarządzania zależnościami
+
+```mermaid
+graph TB
+    CLI[CLI] --> DependencyResolver[Dependency Resolver]
+    
+    DependencyResolver --> VersionFinder[Version Finder]
+    DependencyResolver --> ConflictResolver[Conflict Resolver]
+    DependencyResolver --> DependencyChecker[Dependency Checker]
+    DependencyResolver --> RetryManager[Retry Manager]
+    
+    VersionFinder --> PyPI[(PyPI)]
+    ConflictResolver --> RequirementsProcessor[Requirements Processor]
+    DependencyChecker --> InstalledPackages[(Installed Packages)]
+    RetryManager --> NetworkHandler[Network Handler]
+    
+    style DependencyResolver fill:#f9f,stroke:#333,stroke-width:2px,color:#333
+    style VersionFinder fill:#bbf,stroke:#333,stroke-width:2px,color:#333
+    style ConflictResolver fill:#bfb,stroke:#333,stroke-width:2px,color:#333
+    style RetryManager fill:#fbf,stroke:#333,stroke-width:2px,color:#333
+```
+
+### Przepływ rozwiązywania konfliktów zależności
+
+```mermaid
+sequenceDiagram
+    participant User as Użytkownik
+    participant CLI
+    participant DependencyResolver
+    participant PyPI
+    
+    User->>CLI: infrash deps resolve
+    CLI->>DependencyResolver: Wywołaj resolve_dependency_conflicts()
+    
+    DependencyResolver->>DependencyResolver: Odczytaj requirements.txt
+    DependencyResolver->>PyPI: Pobierz dostępne wersje pakietów
+    PyPI-->>DependencyResolver: Lista dostępnych wersji
+    
+    DependencyResolver->>DependencyResolver: Znajdź konflikty wersji
+    DependencyResolver->>DependencyResolver: Wybierz najlepsze wersje
+    DependencyResolver->>DependencyResolver: Utwórz zaktualizowany plik requirements
+    
+    DependencyResolver-->>CLI: Zwróć listę rozwiązanych konfliktów
+    CLI-->>User: Wyświetl raport
+```
+
 ## Licencja
 
 
 
 ## Autor
-
+- Tom Sapletta
 
 
 

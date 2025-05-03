@@ -4,49 +4,27 @@ Zapoznaj sie z problemem i  wskazowkami i zaimplementuj
 
 
 ```bash
-(venv) (base) [tom@devop infrash]$ infrash remote deploy --host 192.168.188.154 --user pi --repo https://github.com/UnitApi/mcp.git
-[2025-05-03 23:02:45] [INFO] [infrash.remote.remote_manager] Łączenie z 192.168.188.154 jako pi (próba 1/3)...
-[2025-05-03 23:02:45] [INFO] [infrash.remote.remote_manager] Połączenie SSH z 192.168.188.154 nawiązane pomyślnie
-[2025-05-03 23:02:45] [INFO] [infrash.remote.remote_manager] Aktualizacja pip na zdalnym urządzeniu...
-[2025-05-03 23:03:06] [INFO] [infrash.system.dependency_resolver] Pip został zaktualizowany na zdalnym urządzeniu.
-[2025-05-03 23:03:06] [INFO] [infrash.remote.remote_manager] Aktualizacja systemu i instalacja zależności...
-[2025-05-03 23:03:06] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: sudo apt-get update && sudo apt-get install -y git python3 python3-pip python3-venv
-[2025-05-03 23:03:23] [INFO] [infrash.remote.remote_manager] Klonowanie repozytorium https://github.com/UnitApi/mcp.git...
-[2025-05-03 23:03:23] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: git clone https://github.com/UnitApi/mcp.git
-[2025-05-03 23:03:23] [ERROR] [infrash.remote.remote_manager] Polecenie zakończone z kodem błędu 128: fatal: destination path 'mcp' already exists and is not an empty directory.
+: No module named 'infrash'
+(venv) (base) [tom@devop infrash]$ infrash solutions update
+Traceback (most recent call last):
+  File "/home/tom/github/UnitApi/infrash/venv/bin/infrash", line 5, in <module>
+    from infrash.__main__ import main
+  File "/home/tom/github/UnitApi/infrash/src/infrash/__init__.py", line 13, in <module>
+    from infrash.core.runner import Runner
+  File "/home/tom/github/UnitApi/infrash/src/infrash/core/__init__.py", line 8, in <module>
+    from infrash.core.diagnostics import Diagnostics
+  File "/home/tom/github/UnitApi/infrash/src/infrash/core/diagnostics/__init__.py", line 8, in <module>
+    from infrash.core.diagnostics.base import Diagnostics
+  File "/home/tom/github/UnitApi/infrash/src/infrash/core/diagnostics/base.py", line 22, in <module>
+    from infrash.system.dependency import check_dependencies
+  File "/home/tom/github/UnitApi/infrash/src/infrash/system/dependency.py", line 12, in <module>
+    import pkg_resources
+ModuleNotFoundError: No module named 'pkg_resources'
+(venv) (base) [tom@devop infrash]$ infrash solutions update
+[2025-05-03 23:33:25] [ERROR] [infrash.utils.database] Błąd podczas ładowania bazy danych rozwiązań: Expecting value: line 1 column 1 (char 0)
+[2025-05-03 23:33:25] [INFO] [infrash.utils.database] Baza danych rozwiązań jest aktualna
+Baza danych rozwiązań została zaktualizowana!
 
-[2025-05-03 23:03:23] [INFO] [infrash.remote.remote_manager] Repozytorium mcp już istnieje, aktualizowanie...
-[2025-05-03 23:03:23] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: cd mcp && git fetch && git reset --hard origin/main
-[2025-05-03 23:03:24] [INFO] [infrash.remote.remote_manager] Konfiguracja środowiska Python...
-[2025-05-03 23:03:24] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: cd mcp && [ -f requirements.txt ] && echo "Requirements found" || echo "No requirements"
-[2025-05-03 23:03:24] [INFO] [infrash.remote.remote_manager] Tworzenie wirtualnego środowiska...
-[2025-05-03 23:03:24] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: cd mcp && python3 -m venv venv
-[2025-05-03 23:03:32] [INFO] [infrash.remote.remote_manager] Przetwarzanie i instalacja zależności Python...
-[2025-05-03 23:03:32] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: cp mcp/requirements.txt /tmp/requirements_1746306212.txt
-[2025-05-03 23:03:32] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: python3 -c "from infrash.system.dependency_resolver import DependencyResolver; resolver = DependencyResolver(); success, path = resolver.process_requirements_file('/tmp/requirements_1746306212.txt', '/tmp/processed_requirements_1746306212.txt'); print('SUCCESS' if success else 'FAILURE')"
-[2025-05-03 23:03:32] [ERROR] [infrash.remote.remote_manager] Polecenie zakończone z kodem błędu 1: Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-ModuleNotFoundError: No module named 'infrash'
-
-[2025-05-03 23:03:32] [WARNING] [infrash.remote.remote_manager] Nie udało się przetworzyć pliku requirements.txt, używanie oryginalnego pliku...
-[2025-05-03 23:03:32] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: cd mcp && source venv/bin/activate && pip install --upgrade pip && pip install -r mcp/requirements.txt || (pip install --upgrade pip && pip install -r mcp/requirements.txt)
-[2025-05-03 23:03:54] [ERROR] [infrash.remote.remote_manager] Polecenie zakończone z kodem błędu 1: ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'mcp/requirements.txt'
-ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'mcp/requirements.txt'
-
-[2025-05-03 23:03:54] [ERROR] [infrash.remote.remote_manager] Błąd podczas instalacji zależności Python: ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'mcp/requirements.txt'
-ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'mcp/requirements.txt'
-
-[2025-05-03 23:03:54] [INFO] [infrash.remote.remote_manager] Próba instalacji z pominięciem problematycznych pakietów...
-[2025-05-03 23:03:54] [INFO] [infrash.remote.remote_manager] Uruchamianie polecenia: cd mcp && source venv/bin/activate && pip install --no-deps -r mcp/requirements.txt
-[2025-05-03 23:03:56] [ERROR] [infrash.remote.remote_manager] Polecenie zakończone z kodem błędu 1: ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'mcp/requirements.txt'
-
-[2025-05-03 23:03:56] [ERROR] [infrash.remote.remote_manager] Nie udało się zainstalować zależności Python: ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'mcp/requirements.txt'
-
-[2025-05-03 23:03:56] [ERROR] [infrash.remote.remote_manager] Wdrożenie nie powiodło się
-Nie udało się wdrożyć projektu na hoście 192.168.188.154.
-Problem z połączeniem sieciowym: Nie można połączyć się z 192.168.188.154:53.
-Sugestia: Sprawdź swoje połączenie internetowe i ustawienia zapory sieciowej.
-(venv) (base) [tom@devop infrash]$ 
 ```
 
 

@@ -1,0 +1,78 @@
+pipeline {
+    agent {
+        docker {
+            image 'python:3.9-slim'
+        }
+    }
+    
+    environment {
+        INFRASH_CONFIG = "${WORKSPACE}/infrash-config.yaml"
+    }
+    
+    stages {
+        stage('Setup') {
+            steps {
+                sh 'python -m pip install --upgrade pip'
+                sh 'pip install infrash'
+                sh 'if [ -f requirements.txt ]; then pip install -r requirements.txt; fi'
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh 'infrash diagnose'
+                sh 'infrash repo status'
+                sh 'pytest tests/'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh 'infrash build --output dist/'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'dist/*', fingerprint: true
+                }
+            }
+        }
+        
+        stage('Deploy to Staging') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh 'infrash remote deploy --host $STAGING_HOST --user $STAGING_USER --key $SSH_KEY --repo $GIT_URL --branch $GIT_BRANCH'
+                }
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            input {
+                message "Deploy to production?"
+                ok "Yes, deploy it!"
+            }
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh 'infrash remote deploy --host $PRODUCTION_HOST --user $PRODUCTION_USER --key $SSH_KEY --repo $GIT_URL --branch $GIT_BRANCH'
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            junit 'test-results/*.xml'
+        }
+        success {
+            echo 'Build and deployment successful!'
+        }
+        failure {
+            echo 'Build or deployment failed!'
+        }
+    }
+}

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.10] - 2025-05-03
+
+### Added
+- Changes in examples/templates/ansible/deploy.yml
+- Changes in examples/templates/aws/cloudformation.yaml
+- Changes in examples/templates/azure/template.json
+- Changes in examples/templates/docker/Dockerfile
+- Changes in examples/templates/docker/docker-compose.yml
+- Changes in examples/templates/gcp/deployment.yaml
+- Changes in examples/templates/github/workflow.yml
+- Changes in examples/templates/gitlab/gitlab-ci.yml
+- Changes in examples/templates/jenkins/Jenkinsfile
+- Changes in examples/templates/kubernetes/deployment.yaml
+- Changes in examples/templates/kubernetes/service.yaml
+- Changes in examples/templates/terraform/main.tf
+- Changes in examples/templates/terraform/variables.tf
+
+### Changed
+- Changes in examples/gitlab-ci.yml
+
 ## [0.1.9] - 2025-05-03
 
 ## [0.1.8] - 2025-05-03

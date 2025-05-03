@@ -1,0 +1,66 @@
+resources:
+- name: infrash-instance
+  type: compute.v1.instance
+  properties:
+    zone: {{ properties['zone'] }}
+    machineType: zones/{{ properties['zone'] }}/machineTypes/{{ properties['machineType'] }}
+    disks:
+    - deviceName: boot
+      type: PERSISTENT
+      boot: true
+      autoDelete: true
+      initializeParams:
+        sourceImage: projects/debian-cloud/global/images/family/debian-10
+        diskSizeGb: 20
+    networkInterfaces:
+    - network: global/networks/default
+      accessConfigs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+    metadata:
+      items:
+      - key: startup-script
+        value: |
+          #!/bin/bash
+          apt-get update
+          apt-get install -y python3 python3-pip git
+          pip3 install infrash=={{ properties['infrashVersion'] }}
+          
+          # Create Infrash directories
+          mkdir -p /etc/infrash /var/lib/infrash /var/log/infrash
+          
+          # Create Infrash configuration
+          cat > /etc/infrash/config.yaml << 'EOL'
+          environment: {{ properties['environment'] }}
+          log_dir: /var/log/infrash
+          data_dir: /var/lib/infrash
+          EOL
+          
+          # Start Infrash service
+          infrash service install --system
+          systemctl enable infrash
+          systemctl start infrash
+    tags:
+      items:
+      - infrash
+      - {{ properties['environment'] }}
+    serviceAccounts:
+    - email: default
+      scopes:
+      - https://www.googleapis.com/auth/cloud-platform
+
+- name: infrash-firewall
+  type: compute.v1.firewall
+  properties:
+    network: global/networks/default
+    sourceRanges: ["0.0.0.0/0"]
+    targetTags: ["infrash"]
+    allowed:
+    - IPProtocol: TCP
+      ports: ["22", "80", "443", "8000"]
+
+outputs:
+- name: instanceIP
+  value: $(ref.infrash-instance.networkInterfaces[0].accessConfigs[0].natIP)
+- name: infrashWebInterface
+  value: http://$(ref.infrash-instance.networkInterfaces[0].accessConfigs[0].natIP):8000

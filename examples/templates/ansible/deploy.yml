@@ -1,0 +1,108 @@
+---
+# Example Ansible playbook for deploying Infrash
+- name: Deploy Infrash
+  hosts: infrash_servers
+  become: true
+  vars:
+    infrash_version: "latest"
+    infrash_user: "infrash"
+    infrash_group: "infrash"
+    infrash_home: "/opt/infrash"
+    infrash_config_dir: "/etc/infrash"
+    infrash_data_dir: "/var/lib/infrash"
+    infrash_log_dir: "/var/log/infrash"
+    infrash_repo_url: "https://github.com/your-org/infrash-project.git"
+    infrash_repo_branch: "main"
+    
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+      
+    - name: Install required packages
+      package:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+          - git
+          - rsync
+        state: present
+        
+    - name: Create Infrash user
+      user:
+        name: "{{ infrash_user }}"
+        group: "{{ infrash_group }}"
+        home: "{{ infrash_home }}"
+        system: yes
+        state: present
+        
+    - name: Create required directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ infrash_user }}"
+        group: "{{ infrash_group }}"
+        mode: '0755'
+      with_items:
+        - "{{ infrash_config_dir }}"
+        - "{{ infrash_data_dir }}"
+        - "{{ infrash_log_dir }}"
+        
+    - name: Clone Infrash repository
+      git:
+        repo: "{{ infrash_repo_url }}"
+        dest: "{{ infrash_home }}/repo"
+        version: "{{ infrash_repo_branch }}"
+        update: yes
+      become_user: "{{ infrash_user }}"
+      
+    - name: Setup Python virtual environment
+      pip:
+        name: 
+          - pip
+          - setuptools
+          - wheel
+        virtualenv: "{{ infrash_home }}/venv"
+        virtualenv_command: python3 -m venv
+      become_user: "{{ infrash_user }}"
+      
+    - name: Install Infrash
+      pip:
+        name: infrash
+        state: "{{ infrash_version }}"
+        virtualenv: "{{ infrash_home }}/venv"
+      become_user: "{{ infrash_user }}"
+      
+    - name: Copy configuration files
+      template:
+        src: templates/infrash-config.yaml.j2
+        dest: "{{ infrash_config_dir }}/infrash-config.yaml"
+        owner: "{{ infrash_user }}"
+        group: "{{ infrash_group }}"
+        mode: '0644'
+      notify: Restart Infrash service
+      
+    - name: Install Infrash service
+      template:
+        src: templates/infrash.service.j2
+        dest: /etc/systemd/system/infrash.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Infrash service
+      
+    - name: Ensure Infrash service is enabled and started
+      systemd:
+        name: infrash
+        state: started
+        enabled: yes
+        daemon_reload: yes
+        
+  handlers:
+    - name: Restart Infrash service
+      systemd:
+        name: infrash
+        state: restarted

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: infrash-service
+  labels:
+    app: infrash
+spec:
+  selector:
+    app: infrash
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: infrash-public
+  labels:
+    app: infrash
+spec:
+  selector:
+    app: infrash
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: LoadBalancer

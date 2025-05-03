@@ -196,56 +196,57 @@ class RemoteManager:
                     logger.error(f"Nie udało się sklonować repozytorium po {max_retries} próbach")
                     return False
             
-            # Instalacja zależności, jeśli wymagane
-            if install_deps:
-                logger.info("Instalacja zależności...")
+            # Inicjalizuj resolver zależności
+            dependency_resolver = DependencyResolver(remote=True, ssh_client=ssh_client)
+            
+            # Aktualizuj pip
+            logger.info("Aktualizacja pip...")
+            dependency_resolver.update_pip()
+            
+            # Sprawdź i zainstaluj krytyczne zależności
+            logger.info("Sprawdzanie krytycznych zależności...")
+            if not dependency_resolver.ensure_critical_dependencies(max_retries=max_retries):
+                logger.warning("Nie wszystkie krytyczne zależności zostały zainstalowane, ale kontynuujemy wdrażanie")
+            
+            # Sprawdź, czy istnieje plik requirements.txt
+            success, stdout, stderr = self.run_command(
+                ssh_client, 
+                f'find ~/{repo_name} -name "requirements.txt" | head -1'
+            )
+            
+            if success and stdout.strip():
+                requirements_path = stdout.strip()
+                logger.info(f"Znaleziono plik requirements.txt: {requirements_path}")
                 
-                # Inicjalizuj resolver zależności
-                dependency_resolver = DependencyResolver(remote=True, ssh_client=ssh_client)
-                
-                # Aktualizuj pip
-                logger.info("Aktualizacja pip...")
-                dependency_resolver.update_pip()
-                
-                # Sprawdź, czy istnieje plik requirements.txt
-                success, stdout, stderr = self.run_command(
-                    ssh_client, 
-                    f'find ~/{repo_name} -name "requirements.txt" | head -1'
-                )
-                
-                if success and stdout.strip():
-                    requirements_path = stdout.strip()
-                    logger.info(f"Znaleziono plik requirements.txt: {requirements_path}")
+                if resolve_deps:
+                    # Przetwórz plik requirements.txt, aby rozwiązać konflikty wersji
+                    logger.info("Przetwarzanie pliku requirements.txt, aby rozwiązać konflikty wersji...")
+                    success, processed_path = dependency_resolver.process_requirements_file(requirements_path)
                     
-                    if resolve_deps:
-                        # Przetwórz plik requirements.txt, aby rozwiązać konflikty wersji
-                        logger.info("Przetwarzanie pliku requirements.txt, aby rozwiązać konflikty wersji...")
-                        success, processed_path = dependency_resolver.process_requirements_file(requirements_path)
-                        
-                        if success:
-                            logger.info(f"Plik requirements.txt został przetworzony: {processed_path}")
-                            requirements_path = processed_path
-                        else:
-                            logger.warning("Nie udało się przetworzyć pliku requirements.txt, używam oryginalnego pliku")
-                    
-                    # Instaluj zależności z obsługą ponownych prób
-                    if dependency_resolver.install_requirements_with_retry(
-                        requirements_path, 
-                        max_retries=max_retries
-                    ):
-                        logger.info("Zależności zostały zainstalowane pomyślnie")
+                    if success:
+                        logger.info(f"Plik requirements.txt został przetworzony: {processed_path}")
+                        requirements_path = processed_path
                     else:
-                        logger.warning("Wystąpiły problemy podczas instalacji zależności")
-                        
-                        # Spróbuj zainstalować pakiety jeden po drugim
-                        logger.info("Próba instalacji pakietów jeden po drugim...")
-                        if dependency_resolver.install_packages_one_by_one(requirements_path):
-                            logger.info("Zależności zostały zainstalowane pojedynczo")
-                        else:
-                            logger.warning("Nie udało się zainstalować wszystkich zależności")
-                            # Kontynuuj mimo problemów, niektóre pakiety mogły zostać zainstalowane
+                        logger.warning("Nie udało się przetworzyć pliku requirements.txt, używam oryginalnego pliku")
+                
+                # Instaluj zależności z obsługą ponownych prób
+                if dependency_resolver.install_requirements_with_retry(
+                    requirements_path, 
+                    max_retries=max_retries
+                ):
+                    logger.info("Zależności zostały zainstalowane pomyślnie")
                 else:
-                    logger.warning("Nie znaleziono pliku requirements.txt")
+                    logger.warning("Wystąpiły problemy podczas instalacji zależności")
+                    
+                    # Spróbuj zainstalować pakiety jeden po drugim
+                    logger.info("Próba instalacji pakietów jeden po drugim...")
+                    if dependency_resolver.install_packages_one_by_one(requirements_path):
+                        logger.info("Zależności zostały zainstalowane pojedynczo")
+                    else:
+                        logger.warning("Nie udało się zainstalować wszystkich zależności")
+                        # Kontynuuj mimo problemów, niektóre pakiety mogły zostać zainstalowane
+            else:
+                logger.warning("Nie znaleziono pliku requirements.txt")
             
             logger.info("Konfiguracja środowiska zakończona pomyślnie")
             return True

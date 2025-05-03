@@ -783,3 +783,271 @@ class DependencyResolver:
         except Exception as e:
             logger.error(f"Błąd podczas sprawdzania zależności: {str(e)}")
             return False, []
+
+    def resolve_dependency_conflicts(self, requirements_path: str, output_path: str = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
+        """
+        Automatycznie rozwiązuje konflikty wersji pakietów w pliku requirements.txt.
+        
+        Args:
+            requirements_path: Ścieżka do pliku requirements.txt.
+            output_path: Ścieżka do pliku wyjściowego (opcjonalne).
+            
+        Returns:
+            Tuple (bool, str, List[Dict]): Status powodzenia, ścieżka do przetworzonego pliku
+            i lista rozwiązanych konfliktów.
+        """
+        try:
+            if not os.path.exists(requirements_path):
+                logger.error(f"Plik {requirements_path} nie istnieje")
+                return False, requirements_path, []
+            
+            # Jeśli nie podano ścieżki wyjściowej, utwórz tymczasowy plik
+            if output_path is None:
+                fd, output_path = tempfile.mkstemp(suffix='.txt', prefix='resolved_requirements_')
+                os.close(fd)
+            
+            # Odczytaj plik requirements.txt
+            with open(requirements_path, 'r') as f:
+                requirements = f.readlines()
+            
+            processed_requirements = []
+            conflicts_resolved = []
+            
+            # Przetwórz każdą linię
+            for line in requirements:
+                line = line.strip()
+                
+                # Pomiń puste linie i komentarze
+                if not line or line.startswith('#'):
+                    processed_requirements.append(line)
+                    continue
+                
+                # Znajdź nazwę pakietu i wersję
+                match = re.match(r'^([a-zA-Z0-9_.-]+)([<>=!~]+)([a-zA-Z0-9_.-]+)(.*)$', line)
+                
+                if match:
+                    package_name = match.group(1)
+                    operator = match.group(2)
+                    package_version = match.group(3)
+                    rest = match.group(4)
+                    
+                    # Sprawdź, czy wersja jest dostępna
+                    if operator == '==':
+                        available_versions = self.get_available_versions(package_name)
+                        
+                        if package_version not in available_versions:
+                            closest_version = self.find_closest_version(package_name, package_version)
+                            
+                            if closest_version and closest_version != package_version:
+                                # Dodaj oryginalną wersję jako komentarz
+                                processed_requirements.append(f"# Oryginalna wersja: {line}")
+                                processed_requirements.append(f"{package_name}=={closest_version}{rest}")
+                                
+                                conflicts_resolved.append({
+                                    'package': package_name,
+                                    'original_version': package_version,
+                                    'resolved_version': closest_version,
+                                    'reason': 'version_not_available'
+                                })
+                                
+                                logger.info(f"Zmieniono wersję {package_name} z {package_version} na {closest_version}")
+                                continue
+                
+                # Jeśli nie ma potrzeby modyfikacji, dodaj oryginalną linię
+                processed_requirements.append(line)
+            
+            # Sprawdź zależności między pakietami
+            packages_dict = {}
+            for line in processed_requirements:
+                if not line or line.startswith('#'):
+                    continue
+                
+                match = re.match(r'^([a-zA-Z0-9_.-]+)([<>=!~]+)([a-zA-Z0-9_.-]+)(.*)$', line)
+                if match:
+                    package_name = match.group(1)
+                    operator = match.group(2)
+                    package_version = match.group(3)
+                    
+                    if package_name not in packages_dict:
+                        packages_dict[package_name] = []
+                    
+                    packages_dict[package_name].append({
+                        'operator': operator,
+                        'version': package_version,
+                        'line': line
+                    })
+            
+            # Znajdź konflikty (pakiety z wieloma wersjami)
+            for package_name, versions in packages_dict.items():
+                if len(versions) > 1:
+                    # Znajdź najnowszą wersję
+                    try:
+                        exact_versions = [v for v in versions if v['operator'] == '==']
+                        
+                        if len(exact_versions) > 1:
+                            # Sortuj wersje semantycznie
+                            sorted_versions = sorted(
+                                exact_versions,
+                                key=lambda x: version.parse(x['version']),
+                                reverse=True
+                            )
+                            
+                            latest_version = sorted_versions[0]['version']
+                            
+                            # Zastąp wszystkie wersje najnowszą
+                            for i, line in enumerate(processed_requirements):
+                                for v in exact_versions:
+                                    if v['line'] == line and v['version'] != latest_version:
+                                        processed_requirements[i] = f"# Konflikt wersji: {line}"
+                                        processed_requirements.insert(i + 1, f"{package_name}=={latest_version}")
+                                        
+                                        conflicts_resolved.append({
+                                            'package': package_name,
+                                            'original_version': v['version'],
+                                            'resolved_version': latest_version,
+                                            'reason': 'version_conflict'
+                                        })
+                                        
+                                        logger.info(f"Rozwiązano konflikt wersji {package_name}: {v['version']} -> {latest_version}")
+                    except Exception as e:
+                        logger.warning(f"Błąd podczas rozwiązywania konfliktu wersji dla {package_name}: {str(e)}")
+            
+            # Zapisz przetworzony plik
+            with open(output_path, 'w') as f:
+                f.write('\n'.join(processed_requirements))
+            
+            if conflicts_resolved:
+                logger.info(f"Rozwiązano {len(conflicts_resolved)} konfliktów wersji i zapisano do {output_path}")
+            else:
+                logger.info(f"Nie znaleziono konfliktów wersji w pliku {requirements_path}")
+            
+            return True, output_path, conflicts_resolved
+        except Exception as e:
+            logger.error(f"Błąd podczas rozwiązywania konfliktów wersji: {str(e)}")
+            return False, requirements_path, []
+
+    def ensure_critical_dependencies(self, max_retries=3):
+        """
+        Sprawdza i instaluje krytyczne zależności wymagane do działania Infrash.
+        
+        Ta funkcja jest wywoływana automatycznie podczas wdrażania, aby zapewnić,
+        że wszystkie niezbędne zależności są dostępne zarówno lokalnie, jak i na
+        zdalnych systemach.
+        
+        Args:
+            max_retries: Maksymalna liczba prób instalacji
+            
+        Returns:
+            bool: True jeśli wszystkie krytyczne zależności są dostępne lub zostały zainstalowane,
+                  False w przypadku niepowodzenia.
+        """
+        critical_packages = [
+            "setuptools",  # Zawiera pkg_resources
+            "wheel",
+            "pip",
+            "requests"
+        ]
+        
+        logger.info("Sprawdzanie krytycznych zależności...")
+        success = True
+        
+        for package in critical_packages:
+            logger.debug(f"Sprawdzanie pakietu {package}...")
+            
+            if self.remote:
+                # W trybie zdalnym sprawdzamy i instalujemy pakiety przez SSH
+                check_cmd = f"python3 -c 'try: import {package if package != 'setuptools' else 'pkg_resources'}; print(\"OK\"); except ImportError: print(\"MISSING\")'"
+                
+                for attempt in range(max_retries):
+                    try:
+                        stdin, stdout, stderr = self.ssh_client.exec_command(check_cmd)
+                        result = stdout.read().decode().strip()
+                        
+                        if result == "MISSING":
+                            logger.warning(f"Brak krytycznej zależności na zdalnym systemie: {package}. Instalowanie...")
+                            
+                            # Instalacja pakietu
+                            install_cmd = f"pip3 install --user {package}"
+                            stdin, stdout, stderr = self.ssh_client.exec_command(install_cmd)
+                            exit_code = stdout.channel.recv_exit_status()
+                            
+                            if exit_code == 0:
+                                logger.info(f"Pomyślnie zainstalowano {package} na zdalnym systemie")
+                                break
+                            else:
+                                error = stderr.read().decode()
+                                logger.error(f"Błąd podczas instalacji {package} na zdalnym systemie: {error}")
+                                
+                                if attempt < max_retries - 1:
+                                    time.sleep(2 * (attempt + 1))
+                                else:
+                                    success = False
+                        else:
+                            logger.debug(f"Pakiet {package} jest już zainstalowany na zdalnym systemie")
+                            break
+                            
+                    except Exception as e:
+                        logger.error(f"Błąd podczas sprawdzania/instalacji {package} na zdalnym systemie: {str(e)}")
+                        
+                        if attempt < max_retries - 1:
+                            time.sleep(2 * (attempt + 1))
+                        else:
+                            success = False
+            else:
+                # W trybie lokalnym sprawdzamy i instalujemy pakiety bezpośrednio
+                try:
+                    if package == "setuptools":
+                        # Specjalny przypadek dla pkg_resources
+                        try:
+                            import pkg_resources
+                            logger.debug("Pakiet pkg_resources (setuptools) jest już zainstalowany")
+                        except ImportError:
+                            logger.warning("Brak krytycznej zależności: pkg_resources (setuptools). Instalowanie...")
+                            
+                            for attempt in range(max_retries):
+                                try:
+                                    subprocess.check_call([sys.executable, "-m", "pip", "install", "setuptools"])
+                                    import pkg_resources  # Próba ponownego importu
+                                    logger.info("Pomyślnie zainstalowano setuptools (pkg_resources)")
+                                    break
+                                except Exception as e:
+                                    logger.error(f"Próba {attempt+1}/{max_retries} instalacji setuptools nie powiodła się: {e}")
+                                    
+                                    if attempt < max_retries - 1:
+                                        time.sleep(2 * (attempt + 1))
+                                    else:
+                                        logger.error(f"Nie udało się zainstalować setuptools po {max_retries} próbach")
+                                        success = False
+                    else:
+                        # Standardowa weryfikacja dla innych pakietów
+                        module_name = package.replace("-", "_")
+                        try:
+                            __import__(module_name)
+                            logger.debug(f"Pakiet {package} jest już zainstalowany")
+                        except ImportError:
+                            logger.warning(f"Brak krytycznej zależności: {package}. Instalowanie...")
+                            
+                            for attempt in range(max_retries):
+                                try:
+                                    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                                    __import__(module_name)  # Próba ponownego importu
+                                    logger.info(f"Pomyślnie zainstalowano {package}")
+                                    break
+                                except Exception as e:
+                                    logger.error(f"Próba {attempt+1}/{max_retries} instalacji {package} nie powiodła się: {e}")
+                                    
+                                    if attempt < max_retries - 1:
+                                        time.sleep(2 * (attempt + 1))
+                                    else:
+                                        logger.error(f"Nie udało się zainstalować {package} po {max_retries} próbach")
+                                        success = False
+                except Exception as e:
+                    logger.error(f"Błąd podczas weryfikacji zależności {package}: {e}")
+                    success = False
+        
+        if success:
+            logger.info("Wszystkie krytyczne zależności są dostępne")
+        else:
+            logger.warning("Niektóre krytyczne zależności mogą być niedostępne")
+            
+        return success

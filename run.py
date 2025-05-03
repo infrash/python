@@ -30,10 +30,16 @@ def install_package(package_path='.'):
 def run_main_module():
     """Run the main infrash module."""
     try:
+        # Add the src directory to Python path
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        src_dir = os.path.join(script_dir, 'src')
+        if os.path.exists(src_dir) and src_dir not in sys.path:
+            sys.path.insert(0, src_dir)
+            
         # Import and run the cli function from infrash.cli
         from infrash.cli import cli
-        # Call the cli function with an empty object dictionary
-        cli(obj={})
+        # Call the cli function with command line arguments
+        cli()
     except ImportError as e:
         print(f"Error importing infrash module: {e}")
         sys.exit(1)

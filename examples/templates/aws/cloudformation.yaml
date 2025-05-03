@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Infrash deployment on AWS'
+
+Parameters:
+  EnvironmentName:
+    Description: Environment name (e.g., dev, staging, prod)
+    Type: String
+    Default: dev
+    
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t3.micro
+      - t3.small
+      - t3.medium
+    
+  KeyName:
+    Description: Name of an existing EC2 KeyPair for SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+    
+  VpcId:
+    Description: ID of the VPC
+    Type: AWS::EC2::VPC::Id
+    
+  SubnetId:
+    Description: ID of the subnet
+    Type: AWS::EC2::Subnet::Id
+    
+  InfrashVersion:
+    Description: Version of Infrash to install
+    Type: String
+    Default: latest
+
+Resources:
+  InfrashSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Infrash server
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub infrash-sg-${EnvironmentName}
+        - Key: Environment
+          Value: !Ref EnvironmentName
+          
+  InfrashInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMI]
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref InfrashSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          apt-get update
+          apt-get install -y python3 python3-pip git
+          pip3 install infrash==${InfrashVersion}
+          
+          # Create Infrash directories
+          mkdir -p /etc/infrash /var/lib/infrash /var/log/infrash
+          
+          # Create Infrash configuration
+          cat > /etc/infrash/config.yaml << 'EOL'
+          environment: ${EnvironmentName}
+          log_dir: /var/log/infrash
+          data_dir: /var/lib/infrash
+          EOL
+          
+          # Start Infrash service
+          infrash service install --system
+          systemctl enable infrash
+          systemctl start infrash
+      Tags:
+        - Key: Name
+          Value: !Sub infrash-server-${EnvironmentName}
+        - Key: Environment
+          Value: !Ref EnvironmentName
+          
+  InfrashEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref InfrashInstance
+      Tags:
+        - Key: Name
+          Value: !Sub infrash-eip-${EnvironmentName}
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-0c55b159cbfafe1f0
+    us-west-2:
+      AMI: ami-0892d3c7ee96c0bf7
+    eu-west-1:
+      AMI: ami-0f29c8402f8cce65c
+    eu-central-1:
+      AMI: ami-0c115dbd34c69a004
+    ap-northeast-1:
+      AMI: ami-0567c164
+
+Outputs:
+  InfrashServerIP:
+    Description: Public IP address of the Infrash server
+    Value: !Ref InfrashEIP
+    Export:
+      Name: !Sub ${AWS::StackName}-ServerIP
+      
+  InfrashWebInterface:
+    Description: URL for the Infrash web interface
+    Value: !Sub http://${InfrashEIP}:8000
+    Export:
+      Name: !Sub ${AWS::StackName}-WebInterface

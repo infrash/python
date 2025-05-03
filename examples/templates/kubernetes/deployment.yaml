@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infrash
+  labels:
+    app: infrash
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: infrash
+  template:
+    metadata:
+      labels:
+        app: infrash
+    spec:
+      containers:
+      - name: infrash
+        image: infrash:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: INFRASH_ENV
+          value: "production"
+        - name: INFRASH_CONFIG
+          value: "/app/config/infrash-config.yaml"
+        - name: POSTGRES_HOST
+          value: "postgres-service"
+        - name: REDIS_HOST
+          value: "redis-service"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: data-volume
+          mountPath: /app/data
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: infrash-config
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: infrash-data-pvc
