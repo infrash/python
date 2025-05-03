@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test runner for UnitMCP tests.
+Test runner for infrash tests.
 
 This script discovers and runs all tests in the tests directory.
 """
@@ -60,7 +60,7 @@ def main():
     """
     Main entry point.
     """
-    parser = argparse.ArgumentParser(description='Run UnitMCP tests')
+    parser = argparse.ArgumentParser(description='Run infrash tests')
     parser.add_argument('-p', '--pattern', help='Pattern to match test files (without "test_" prefix and ".py" suffix)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
     args = parser.parse_args()

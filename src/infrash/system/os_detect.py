@@ -1,147 +1,3 @@
-if process_winget.returncode == 0:
-    logger.info("Winget jest już zainstalowany.")
-    return True
-except Exception:
-# Ani Chocolatey, ani winget nie są zainstalowane
-# Instalujemy Chocolatey
-logger.info("Instalowanie Chocolatey...")
-
-# Polecenie instalacji Chocolatey (wymaga PowerShell z uprawnieniami administratora)
-install_cmd = 'powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString(\'https://community.chocolatey.org/install.ps1\'))"'
-
-process_install = subprocess.run(
-    install_cmd,
-    shell=True,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process_install.returncode == 0:
-    logger.info("Chocolatey został zainstalowany pomyślnie.")
-    return True
-else:
-    logger.error(f"Błąd podczas instalacji Chocolatey: {process_install.stderr}")
-    logger.warning("Używam pip jako alternatywnego menedżera pakietów.")
-    return False
-except Exception as e:
-logger.error(f"Błąd podczas instalacji Chocolatey: {str(e)}")
-return False
-
-else:
-# Nieznany system - używamy pip
-logger.warning(f"Nieznany system operacyjny: {system}. Używam pip jako menedżera pakietów.")
-
-# Sprawdzamy, czy pip jest zainstalowany
-try:
-    process = subprocess.run(
-        [sys.executable, "-m", "pip", "--version"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True
-    )
-
-    if process.returncode == 0:
-        logger.info("Pip jest już zainstalowany.")
-        return True
-    else:
-        logger.error("Pip nie jest zainstalowany i nie można go automatycznie zainstalować na nieznanym systemie.")
-        return False
-except Exception as e:
-    logger.error(f"Błąd podczas sprawdzania pip: {str(e)}")
-    return False
-
-def is_admin() -> bool:
-    """
-    Sprawdza, czy skrypt jest uruchomiony z uprawnieniami administratora.
-    
-    Returns:
-        True, jeśli skrypt jest uruchomiony z uprawnieniami administratora, False w przeciwnym razie.
-    """
-    system = platform.system()
-
-    if system == "Windows":
-        try:
-            # Windows
-            import ctypes
-            return ctypes.windll.shell32.IsUserAnAdmin() != 0
-        except Exception:
-            return False
-    else:
-        # Unix
-        return os.geteuid() == 0 if hasattr(os, "geteuid") else False
-
-def get_python_version() -> str:
-    """
-    Pobiera wersję Pythona.
-    
-    Returns:
-        Wersja Pythona.
-    """
-    return platform.python_version()
-
-def is_virtual_env() -> bool:
-    """
-    Sprawdza, czy skrypt jest uruchomiony w wirtualnym środowisku Pythona.
-    
-    Returns:
-        True, jeśli skrypt jest uruchomiony w wirtualnym środowisku, False w przeciwnym razie.
-    """
-    return hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
-
-def is_raspberry_pi() -> bool:
-    """
-    Sprawdza, czy system działa na Raspberry Pi.
-    
-    Returns:
-        True, jeśli system działa na Raspberry Pi, False w przeciwnym razie.
-    """
-    # Sprawdzamy, czy istnieje plik /proc/cpuinfo
-    if not os.path.isfile("/proc/cpuinfo"):
-        return False
-
-    try:
-        # Odczytujemy zawartość pliku /proc/cpuinfo
-        with open("/proc/cpuinfo", "r") as f:
-            cpuinfo = f.read()
-
-        # Sprawdzamy, czy zawiera informacje o procesorze Broadcom używanym w Raspberry Pi
-        return any(processor in cpuinfo for processor in ["BCM2708", "BCM2709", "BCM2711", "BCM2835", "BCM2836", "BCM2837"])
-    except Exception:
-        return False
-
-def is_available_command(command: str) -> bool:
-    """
-    Sprawdza, czy polecenie jest dostępne w systemie.
-    
-    Args:
-        command: Nazwa polecenia.
-        
-    Returns:
-        True, jeśli polecenie jest dostępne, False w przeciwnym razie.
-    """
-    try:
-        # Sprawdzamy, czy polecenie jest dostępne
-        if platform.system() == "Windows":
-            # W Windows używamy where
-            process = subprocess.run(
-                ["where", command],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True
-            )
-        else:
-            # W Unix używamy which
-            process = subprocess.run(
-                ["which", command],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True
-            )
-
-        return process.returncode == 0
-    except Exception:
-        return False#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -163,7 +19,7 @@ logger = get_logger(__name__)
 def detect_os() -> Dict[str, str]:
     """
     Wykrywa system operacyjny.
-    
+
     Returns:
         Słownik z informacjami o systemie operacyjnym.
     """
@@ -269,7 +125,7 @@ def detect_os() -> Dict[str, str]:
 def get_package_manager() -> str:
     """
     Wykrywa menedżera pakietów.
-    
+
     Returns:
         Nazwa menedżera pakietów.
     """
@@ -344,14 +200,14 @@ def get_package_manager() -> str:
 
         # Jeśli nie zainstalowano Chocolatey, sprawdzamy winget
         try:
-            process = subprocess.run(
+            process_winget = subprocess.run(
                 ["winget", "--version"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True
             )
 
-            if process.returncode == 0:
+            if process_winget.returncode == 0:
                 logger.debug("Wykryto menedżera pakietów: winget")
                 return "winget"
         except Exception:
@@ -369,7 +225,7 @@ def get_package_manager() -> str:
 def install_package_manager() -> bool:
     """
     Instaluje domyślny menedżer pakietów dla danego systemu operacyjnego.
-    
+
     Returns:
         True, jeśli menedżer pakietów został zainstalowany pomyślnie, False w przeciwnym razie.
     """
@@ -391,7 +247,7 @@ def install_package_manager() -> bool:
                     universal_newlines=True
                 )
 
-                return process.returncode ==.0
+                return process.returncode == 0
             except Exception as e:
                 logger.error(f"Błąd podczas aktualizacji apt-get: {str(e)}")
                 return False
@@ -534,4 +390,146 @@ def install_package_manager() -> bool:
                     )
 
                     if process_winget.returncode == 0:
-                        logger.info("Winget jest już za
+                        logger.info("Winget jest już zainstalowany.")
+                        return True
+                except Exception:
+                    # Ani Chocolatey, ani winget nie są zainstalowane
+                    # Instalujemy Chocolatey
+                    logger.info("Instalowanie Chocolatey...")
+
+                    # Polecenie instalacji Chocolatey (wymaga PowerShell z uprawnieniami administratora)
+                    install_cmd = 'powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString(\'https://community.chocolatey.org/install.ps1\'))"'
+
+                    process_install = subprocess.run(
+                        install_cmd,
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True
+                    )
+
+                    if process_install.returncode == 0:
+                        logger.info("Chocolatey został zainstalowany pomyślnie.")
+                        return True
+                    else:
+                        logger.error(f"Błąd podczas instalacji Chocolatey: {process_install.stderr}")
+                        logger.warning("Używam pip jako alternatywnego menedżera pakietów.")
+                        return False
+        except Exception as e:
+            logger.error(f"Błąd podczas instalacji Chocolatey: {str(e)}")
+            return False
+
+    else:
+        # Nieznany system - używamy pip
+        logger.warning(f"Nieznany system operacyjny: {system}. Używam pip jako menedżera pakietów.")
+
+        # Sprawdzamy, czy pip jest zainstalowany
+        try:
+            process = subprocess.run(
+                [sys.executable, "-m", "pip", "--version"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+
+            if process.returncode == 0:
+                logger.info("Pip jest już zainstalowany.")
+                return True
+            else:
+                logger.error("Pip nie jest zainstalowany i nie można go automatycznie zainstalować na nieznanym systemie.")
+                return False
+        except Exception as e:
+            logger.error(f"Błąd podczas sprawdzania pip: {str(e)}")
+            return False
+
+def is_admin() -> bool:
+    """
+    Sprawdza, czy skrypt jest uruchomiony z uprawnieniami administratora.
+
+    Returns:
+        True, jeśli skrypt jest uruchomiony z uprawnieniami administratora, False w przeciwnym razie.
+    """
+    system = platform.system()
+
+    if system == "Windows":
+        try:
+            # Windows
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
+    else:
+        # Unix
+        return os.geteuid() == 0 if hasattr(os, "geteuid") else False
+
+def get_python_version() -> str:
+    """
+    Pobiera wersję Pythona.
+
+    Returns:
+        Wersja Pythona.
+    """
+    return platform.python_version()
+
+def is_virtual_env() -> bool:
+    """
+    Sprawdza, czy skrypt jest uruchomiony w wirtualnym środowisku Pythona.
+
+    Returns:
+        True, jeśli skrypt jest uruchomiony w wirtualnym środowisku, False w przeciwnym razie.
+    """
+    return hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
+
+def is_raspberry_pi() -> bool:
+    """
+    Sprawdza, czy system działa na Raspberry Pi.
+
+    Returns:
+        True, jeśli system działa na Raspberry Pi, False w przeciwnym razie.
+    """
+    # Sprawdzamy, czy istnieje plik /proc/cpuinfo
+    if not os.path.isfile("/proc/cpuinfo"):
+        return False
+
+    try:
+        # Odczytujemy zawartość pliku /proc/cpuinfo
+        with open("/proc/cpuinfo", "r") as f:
+            cpuinfo = f.read()
+
+        # Sprawdzamy, czy zawiera informacje o procesorze Broadcom używanym w Raspberry Pi
+        return any(processor in cpuinfo for processor in ["BCM2708", "BCM2709", "BCM2711", "BCM2835", "BCM2836", "BCM2837"])
+    except Exception:
+        return False
+
+def is_available_command(command: str) -> bool:
+    """
+    Sprawdza, czy polecenie jest dostępne w systemie.
+
+    Args:
+        command: Nazwa polecenia.
+
+    Returns:
+        True, jeśli polecenie jest dostępne, False w przeciwnym razie.
+    """
+    try:
+        # Sprawdzamy, czy polecenie jest dostępne
+        if platform.system() == "Windows":
+            # W Windows używamy where
+            process = subprocess.run(
+                ["where", command],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+        else:
+            # W Unix używamy which
+            process = subprocess.run(
+                ["which", command],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+
+        return process.returncode == 0
+    except Exception:
+        return False#!/usr/bin/env python3

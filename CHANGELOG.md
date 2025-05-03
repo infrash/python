@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2025-05-03
+
+### Added
+- Changes in CONTRIBUTING.md
+- Changes in environment.yml
+- Changes in requirements-dev.txt
+- Changes in src/infrash/core/diagnostics/__init__.py
+- Changes in src/infrash/core/diagnostics/asyncio.py
+- Changes in src/infrash/core/diagnostics/base.py
+- Changes in src/infrash/core/diagnostics/connection.py
+- Changes in src/infrash/core/diagnostics/database.py
+- Changes in src/infrash/core/diagnostics/dependencies.py
+- Changes in src/infrash/core/diagnostics/filesystem.py
+- Changes in src/infrash/core/diagnostics/hardware.py
+- Changes in src/infrash/core/diagnostics/logs.py
+- Changes in src/infrash/core/diagnostics/networking.py
+- Changes in src/infrash/core/diagnostics/process.py
+- Changes in src/infrash/core/diagnostics/repository.py
+- Changes in src/infrash/core/diagnostics/resources.py
+- Changes in src/infrash/core/diagnostics/script.py
+- Changes in src/infrash/core/os_detect/__init__.py
+- Changes in src/infrash/core/os_detect/base.py
+- Changes in src/infrash/core/os_detect/installation.py
+- Changes in src/infrash/core/os_detect/package_manager.py
+- Changes in src/infrash/core/os_detect/utilities.py
+- Changes in src/infrash/core/repair/__init__.py
+- Changes in src/infrash/core/repair/base.py
+- Changes in src/infrash/core/repair/configuration.py
+- Changes in src/infrash/core/repair/dependencies.py
+- Changes in src/infrash/core/repair/execution.py
+- Changes in src/infrash/core/repair/filesystem.py
+- Changes in src/infrash/core/repair/permissions.py
+- Changes in src/infrash/core/repair/solutions.py
+
+### Removed
+- Changes in src/infrash/core/diagnostics.py
+- Changes in src/infrash/core/repair.py
+
 ## [0.1.2] - 2025-05-03
 
 ### Added
@@ -133,7 +171,7 @@ All notable changes to this project will be documented in this file.
 - Changes in tools/test/env.sh
 - Changes in tools/test/test_imports.py
 - Changes in tools/test_env_loader_fix.py
-- Changes in tools/test_unitmcp_integration.py
+- Changes in tools/test_infrash_integration.py
 - Changes in tools/update/README.md
 - Changes in tools/update/changelog.py
 - Changes in tools/update/code.sh

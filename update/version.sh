@@ -22,11 +22,11 @@ fi
 pip install -r requirements.txt
 
 # Uninstall and reinstall to be safe
-pip uninstall -y unitmcp
+pip uninstall -y infrash
 pip install -e .
 
-python update/src.py -f src/unitmcp/__init__.py --type patch
-python update/src.py -f src/unitmcp/_version.py --type patch
+python update/src.py -f src/infrash/__init__.py --type patch
+python update/src.py -f src/infrash/_version.py --type patch
 python update/src.py -f pyproject.toml --type patch
 # python update/project.sh
 python update/changelog.py

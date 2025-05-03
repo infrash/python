@@ -1,562 +1,3 @@
-"""
-dependency.py
-"""
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager in ["apt-get", "apt"]:
-# Używamy apt-get/apt do odinstalowania pakietu systemowego
-# Sprawdzamy, czy mamy uprawnienia roota
-if not is_admin():
-    logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
-
-    # Próbujemy użyć sudo
-    if _is_command_available("sudo"):
-        cmd = ["sudo", package_manager, "remove", "-y", package_name]
-    else:
-        logger.error("Brak uprawnień administratora i brak polecenia sudo.")
-        return False
-else:
-    cmd = [package_manager, "remove", "-y", package_name]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager in ["yum", "dnf"]:
-# Używamy yum/dnf do odinstalowania pakietu systemowego
-# Sprawdzamy, czy mamy uprawnienia roota
-if not is_admin():
-    logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
-
-    # Próbujemy użyć sudo
-    if _is_command_available("sudo"):
-        cmd = ["sudo", package_manager, "remove", "-y", package_name]
-    else:
-        logger.error("Brak uprawnień administratora i brak polecenia sudo.")
-        return False
-else:
-    cmd = [package_manager, "remove", "-y", package_name]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager == "pacman":
-# Używamy pacman do odinstalowania pakietu systemowego
-# Sprawdzamy, czy mamy uprawnienia roota
-if not is_admin():
-    logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
-
-    # Próbujemy użyć sudo
-    if _is_command_available("sudo"):
-        cmd = ["sudo", "pacman", "-R", "--noconfirm", package_name]
-    else:
-        logger.error("Brak uprawnień administratora i brak polecenia sudo.")
-        return False
-else:
-    cmd = ["pacman", "-R", "--noconfirm", package_name]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager == "apk":
-# Używamy apk do odinstalowania pakietu systemowego
-# Sprawdzamy, czy mamy uprawnienia roota
-if not is_admin():
-    logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
-
-    # Próbujemy użyć sudo
-    if _is_command_available("sudo"):
-        cmd = ["sudo", "apk", "del", package_name]
-    else:
-        logger.error("Brak uprawnień administratora i brak polecenia sudo.")
-        return False
-else:
-    cmd = ["apk", "del", package_name]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager == "brew":
-# Używamy brew do odinstalowania pakietu systemowego (macOS)
-cmd = ["brew", "uninstall", package_name]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager == "choco":
-# Używamy chocolatey do odinstalowania pakietu systemowego (Windows)
-# Sprawdzamy, czy mamy uprawnienia administratora
-if not is_admin():
-    logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
-
-    # W Windows nie możemy użyć sudo, więc zwracamy błąd
-    logger.error("Brak uprawnień administratora. Uruchom ponownie z uprawnieniami administratora.")
-    return False
-
-cmd = ["choco", "uninstall", package_name, "-y"]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-elif package_manager == "winget":
-# Używamy winget do odinstalowania pakietu systemowego (Windows)
-cmd = ["winget", "uninstall", "-e", "--id", package_name]
-
-process = subprocess.run(
-    cmd,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    universal_newlines=True
-)
-
-if process.returncode != 0:
-    logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
-    return False
-
-logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
-return True
-
-else:
-logger.error(f"Nieznany menedżer pakietów: {package_manager}")
-return False
-
-except Exception as e:
-logger.error(f"Błąd podczas odinstalowywania pakietu {package_name}: {str(e)}")
-return False
-
-def install_dependencies_from_file(file_path: str, force: bool = False) -> bool:
-    """
-    Instaluje zależności z pliku.
-
-    Args:
-        file_path: Ścieżka do pliku z zależnościami.
-        force: Czy wymusić reinstalację istniejących zależności.
-
-    Returns:
-        True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
-    """
-    if not os.path.isfile(file_path):
-        logger.error(f"Plik {file_path} nie istnieje.")
-        return False
-
-    # Wybieramy odpowiednią funkcję w zależności od typu pliku
-    if file_path.endswith(".txt"):
-        return _install_from_requirements_txt(file_path, force)
-    elif file_path.endswith(".toml"):
-        return _install_from_pyproject_toml(file_path, force)
-    elif file_path.endswith(".py"):
-        return _install_from_setup_py(file_path, force)
-    elif file_path.endswith(".cfg"):
-        return _install_from_setup_cfg(file_path, force)
-    else:
-        logger.error(f"Nieobsługiwany typ pliku: {file_path}")
-        return False
-
-def _install_from_requirements_txt(file_path: str, force: bool = False) -> bool:
-    """
-    Instaluje zależności z pliku requirements.txt.
-
-    Args:
-        file_path: Ścieżka do pliku requirements.txt.
-        force: Czy wymusić reinstalację istniejących zależności.
-
-    Returns:
-        True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        # Używamy pip do instalacji zależności
-        cmd = [sys.executable, "-m", "pip", "install"]
-
-        # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
-        if force:
-            cmd.append("--force-reinstall")
-
-        # Dodajemy opcję -r i ścieżkę do pliku
-        cmd.extend(["-r", file_path])
-
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
-            return False
-
-        logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
-        return False
-
-def _install_from_pyproject_toml(file_path: str, force: bool = False) -> bool:
-    """
-    Instaluje zależności z pliku pyproject.toml.
-
-    Args:
-        file_path: Ścieżka do pliku pyproject.toml.
-        force: Czy wymusić reinstalację istniejących zależności.
-
-    Returns:
-        True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        # Używamy pip do instalacji projektu w trybie deweloperskim
-        cmd = [sys.executable, "-m", "pip", "install"]
-
-        # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
-        if force:
-            cmd.append("--force-reinstall")
-
-        # Dodajemy opcję -e i ścieżkę do katalogu projektu
-        directory = os.path.dirname(file_path)
-        cmd.extend(["-e", directory])
-
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
-            return False
-
-        logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
-        return False
-
-def _install_from_setup_py(file_path: str, force: bool = False) -> bool:
-    """
-    Instaluje zależności z pliku setup.py.
-
-    Args:
-        file_path: Ścieżka do pliku setup.py.
-        force: Czy wymusić reinstalację istniejących zależności.
-
-    Returns:
-        True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        # Używamy pip do instalacji projektu w trybie deweloperskim
-        cmd = [sys.executable, "-m", "pip", "install"]
-
-        # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
-        if force:
-            cmd.append("--force-reinstall")
-
-        # Dodajemy opcję -e i ścieżkę do katalogu projektu
-        directory = os.path.dirname(file_path)
-        cmd.extend(["-e", directory])
-
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
-            return False
-
-        logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
-        return False
-
-def _install_from_setup_cfg(file_path: str, force: bool = False) -> bool:
-    """
-    Instaluje zależności z pliku setup.cfg.
-
-    Args:
-        file_path: Ścieżka do pliku setup.cfg.
-        force: Czy wymusić reinstalację istniejących zależności.
-
-    Returns:
-        True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        # Używamy pip do instalacji projektu w trybie deweloperskim
-        cmd = [sys.executable, "-m", "pip", "install"]
-
-        # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
-        if force:
-            cmd.append("--force-reinstall")
-
-        # Dodajemy opcję -e i ścieżkę do katalogu projektu
-        directory = os.path.dirname(file_path)
-        cmd.extend(["-e", directory])
-
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
-            return False
-
-        logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
-        return False
-
-def create_virtual_env(path: str, python_version: Optional[str] = None) -> bool:
-    """
-    Tworzy wirtualne środowisko Pythona.
-
-    Args:
-        path: Ścieżka do katalogu, w którym ma zostać utworzone wirtualne środowisko.
-        python_version: Wersja Pythona (opcjonalne).
-
-    Returns:
-        True, jeśli wirtualne środowisko zostało utworzone pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        logger.info(f"Tworzenie wirtualnego środowiska w {path}...")
-
-        # Sprawdzamy, czy mamy zainstalowany moduł venv
-        try:
-            import venv
-        except ImportError:
-            logger.error("Brak modułu venv. Instaluję...")
-
-            # Instalujemy moduł venv
-            cmd_install = [sys.executable, "-m", "pip", "install", "virtualenv"]
-
-            process_install = subprocess.run(
-                cmd_install,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True
-            )
-
-            if process_install.returncode != 0:
-                logger.error(f"Błąd podczas instalacji modułu virtualenv: {process_install.stderr}")
-                return False
-
-        # Tworzymy wirtualne środowisko
-        if python_version:
-            # Używamy określonej wersji Pythona
-            cmd = ["virtualenv", "-p", f"python{python_version}", path]
-        else:
-            # Używamy bieżącej wersji Pythona
-            cmd = ["virtualenv", path]
-
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas tworzenia wirtualnego środowiska: {process.stderr}")
-            return False
-
-        logger.info(f"Wirtualne środowisko zostało utworzone pomyślnie w {path}.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas tworzenia wirtualnego środowiska: {str(e)}")
-        return False
-
-def activate_virtual_env(path: str) -> bool:
-    """
-    Aktywuje wirtualne środowisko Pythona w bieżącym procesie.
-
-    Args:
-        path: Ścieżka do katalogu z wirtualnym środowiskiem.
-
-    Returns:
-        True, jeśli wirtualne środowisko zostało aktywowane pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        logger.info(f"Aktywowanie wirtualnego środowiska w {path}...")
-
-        # Sprawdzamy system operacyjny
-        if platform.system() == "Windows":
-            # Windows
-            activate_script = os.path.join(path, "Scripts", "activate.bat")
-        else:
-            # Unix
-            activate_script = os.path.join(path, "bin", "activate")
-
-        # Sprawdzamy, czy skrypt aktywacyjny istnieje
-        if not os.path.isfile(activate_script):
-            logger.error(f"Brak skryptu aktywacyjnego: {activate_script}")
-            return False
-
-        # Aktywujemy wirtualne środowisko
-        if platform.system() == "Windows":
-            # Windows - aktywujemy przez modyfikację zmiennych środowiskowych
-            bin_dir = os.path.join(path, "Scripts")
-
-            # Modyfikujemy PATH
-            os.environ["PATH"] = f"{bin_dir};{os.environ.get('PATH', '')}"
-
-            # Modyfikujemy VIRTUAL_ENV
-            os.environ["VIRTUAL_ENV"] = path
-
-            # Usuwamy PYTHONHOME, jeśli istnieje
-            if "PYTHONHOME" in os.environ:
-                del os.environ["PYTHONHOME"]
-        else:
-            # Unix - aktywujemy przez modyfikację zmiennych środowiskowych
-            bin_dir = os.path.join(path, "bin")
-
-            # Modyfikujemy PATH
-            os.environ["PATH"] = f"{bin_dir}:{os.environ.get('PATH', '')}"
-
-            # Modyfikujemy VIRTUAL_ENV
-            os.environ["VIRTUAL_ENV"] = path
-
-            # Usuwamy PYTHONHOME, jeśli istnieje
-            if "PYTHONHOME" in os.environ:
-                del os.environ["PYTHONHOME"]
-
-        logger.info(f"Wirtualne środowisko zostało aktywowane pomyślnie.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas aktywowania wirtualnego środowiska: {str(e)}")
-        return False
-
-def run_script_in_virtual_env(venv_path: str, script_path: str, args: Optional[List[str]] = None) -> bool:
-    """
-    Uruchamia skrypt Python w wirtualnym środowisku.
-
-    Args:
-        venv_path: Ścieżka do katalogu z wirtualnym środowiskiem.
-        script_path: Ścieżka do skryptu Python.
-        args: Lista argumentów dla skryptu (opcjonalne).
-
-    Returns:
-        True, jeśli skrypt został uruchomiony pomyślnie, False w przeciwnym razie.
-    """
-    try:
-        logger.info(f"Uruchamianie skryptu {script_path} w wirtualnym środowisku {venv_path}...")
-
-        # Sprawdzamy system operacyjny
-        if platform.system() == "Windows":
-            # Windows
-            python_executable = os.path.join(venv_path, "Scripts", "python.exe")
-        else:
-            # Unix
-            python_executable = os.path.join(venv_path, "bin", "python")
-
-        # Sprawdzamy, czy interpreter Pythona istnieje
-        if not os.path.isfile(python_executable):
-            logger.error(f"Brak interpretera Pythona: {python_executable}")
-            return False
-
-        # Przygotowujemy polecenie
-        cmd = [python_executable, script_path]
-
-        # Dodajemy argumenty, jeśli podano
-        if args:
-            cmd.extend(args)
-
-        # Uruchamiamy skrypt
-        process = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-
-        if process.returncode != 0:
-            logger.error(f"Błąd podczas uruchamiania skryptu: {process.stderr}")
-            return False
-
-        logger.info(f"Skrypt został uruchomiony pomyślnie.")
-        return True
-
-    except Exception as e:
-        logger.error(f"Błąd podczas uruchamiania skryptu: {str(e)}")
-        return False#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Moduł zarządzania zależnościami. Służy do sprawdzania i instalowania
@@ -1194,3 +635,559 @@ def uninstall_dependency(package_name: str, package_manager: Optional[str] = Non
                 return False
 
             logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+
+            logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+            return True
+
+            elif package_manager in ["apt-get", "apt"]:
+            # Używamy apt-get/apt do odinstalowania pakietu systemowego
+            # Sprawdzamy, czy mamy uprawnienia roota
+            if not is_admin():
+                logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
+
+                # Próbujemy użyć sudo
+                if _is_command_available("sudo"):
+                    cmd = ["sudo", package_manager, "remove", "-y", package_name]
+                else:
+                    logger.error("Brak uprawnień administratora i brak polecenia sudo.")
+                    return False
+            else:
+                cmd = [package_manager, "remove", "-y", package_name]
+
+            process = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+
+            if process.returncode != 0:
+                logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+                return False
+
+            logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+            return True
+
+        elif package_manager in ["yum", "dnf"]:
+        # Używamy yum/dnf do odinstalowania pakietu systemowego
+        # Sprawdzamy, czy mamy uprawnienia roota
+        if not is_admin():
+            logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
+
+            # Próbujemy użyć sudo
+            if _is_command_available("sudo"):
+                cmd = ["sudo", package_manager, "remove", "-y", package_name]
+            else:
+                logger.error("Brak uprawnień administratora i brak polecenia sudo.")
+                return False
+        else:
+            cmd = [package_manager, "remove", "-y", package_name]
+
+        process = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        if process.returncode != 0:
+            logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+            return False
+
+        logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+        return True
+
+        elif package_manager == "pacman":
+        # Używamy pacman do odinstalowania pakietu systemowego
+        # Sprawdzamy, czy mamy uprawnienia roota
+        if not is_admin():
+            logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
+
+            # Próbujemy użyć sudo
+            if _is_command_available("sudo"):
+                cmd = ["sudo", "pacman", "-R", "--noconfirm", package_name]
+            else:
+                logger.error("Brak uprawnień administratora i brak polecenia sudo.")
+                return False
+        else:
+            cmd = ["pacman", "-R", "--noconfirm", package_name]
+
+        process = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        if process.returncode != 0:
+            logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+            return False
+
+        logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+        return True
+
+        elif package_manager == "apk":
+        # Używamy apk do odinstalowania pakietu systemowego
+        # Sprawdzamy, czy mamy uprawnienia roota
+        if not is_admin():
+            logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
+
+            # Próbujemy użyć sudo
+            if _is_command_available("sudo"):
+                cmd = ["sudo", "apk", "del", package_name]
+            else:
+                logger.error("Brak uprawnień administratora i brak polecenia sudo.")
+                return False
+        else:
+            cmd = ["apk", "del", package_name]
+
+        process = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        if process.returncode != 0:
+            logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+            return False
+
+        logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+        return True
+
+        elif package_manager == "brew":
+        # Używamy brew do odinstalowania pakietu systemowego (macOS)
+        cmd = ["brew", "uninstall", package_name]
+
+        process = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        if process.returncode != 0:
+            logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+            return False
+
+        logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+        return True
+
+        elif package_manager == "choco":
+        # Używamy chocolatey do odinstalowania pakietu systemowego (Windows)
+        # Sprawdzamy, czy mamy uprawnienia administratora
+        if not is_admin():
+            logger.warning(f"Odinstalowanie pakietu {package_name} wymaga uprawnień administratora.")
+
+            # W Windows nie możemy użyć sudo, więc zwracamy błąd
+            logger.error("Brak uprawnień administratora. Uruchom ponownie z uprawnieniami administratora.")
+            return False
+
+        cmd = ["choco", "uninstall", package_name, "-y"]
+
+        process = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        if process.returncode != 0:
+            logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+            return False
+
+        logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+        return True
+
+        elif package_manager == "winget":
+        # Używamy winget do odinstalowania pakietu systemowego (Windows)
+        cmd = ["winget", "uninstall", "-e", "--id", package_name]
+
+        process = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+
+        if process.returncode != 0:
+            logger.error(f"Błąd podczas odinstalowywania {package_name}: {process.stderr}")
+            return False
+
+        logger.info(f"Pakiet {package_name} został odinstalowany pomyślnie.")
+        return True
+
+        else:
+        logger.error(f"Nieznany menedżer pakietów: {package_manager}")
+        return False
+
+        except Exception as e:
+        logger.error(f"Błąd podczas odinstalowywania pakietu {package_name}: {str(e)}")
+        return False
+
+        def install_dependencies_from_file(file_path: str, force: bool = False) -> bool:
+            """
+            Instaluje zależności z pliku.
+
+            Args:
+                file_path: Ścieżka do pliku z zależnościami.
+                force: Czy wymusić reinstalację istniejących zależności.
+
+            Returns:
+                True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
+            """
+            if not os.path.isfile(file_path):
+                logger.error(f"Plik {file_path} nie istnieje.")
+                return False
+
+            # Wybieramy odpowiednią funkcję w zależności od typu pliku
+            if file_path.endswith(".txt"):
+                return _install_from_requirements_txt(file_path, force)
+            elif file_path.endswith(".toml"):
+                return _install_from_pyproject_toml(file_path, force)
+            elif file_path.endswith(".py"):
+                return _install_from_setup_py(file_path, force)
+            elif file_path.endswith(".cfg"):
+                return _install_from_setup_cfg(file_path, force)
+            else:
+                logger.error(f"Nieobsługiwany typ pliku: {file_path}")
+                return False
+
+        def _install_from_requirements_txt(file_path: str, force: bool = False) -> bool:
+            """
+            Instaluje zależności z pliku requirements.txt.
+
+            Args:
+                file_path: Ścieżka do pliku requirements.txt.
+                force: Czy wymusić reinstalację istniejących zależności.
+
+            Returns:
+                True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                # Używamy pip do instalacji zależności
+                cmd = [sys.executable, "-m", "pip", "install"]
+
+                # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
+                if force:
+                    cmd.append("--force-reinstall")
+
+                # Dodajemy opcję -r i ścieżkę do pliku
+                cmd.extend(["-r", file_path])
+
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+
+                if process.returncode != 0:
+                    logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
+                    return False
+
+                logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
+                return False
+
+        def _install_from_pyproject_toml(file_path: str, force: bool = False) -> bool:
+            """
+            Instaluje zależności z pliku pyproject.toml.
+
+            Args:
+                file_path: Ścieżka do pliku pyproject.toml.
+                force: Czy wymusić reinstalację istniejących zależności.
+
+            Returns:
+                True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                # Używamy pip do instalacji projektu w trybie deweloperskim
+                cmd = [sys.executable, "-m", "pip", "install"]
+
+                # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
+                if force:
+                    cmd.append("--force-reinstall")
+
+                # Dodajemy opcję -e i ścieżkę do katalogu projektu
+                directory = os.path.dirname(file_path)
+                cmd.extend(["-e", directory])
+
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+
+                if process.returncode != 0:
+                    logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
+                    return False
+
+                logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
+                return False
+
+        def _install_from_setup_py(file_path: str, force: bool = False) -> bool:
+            """
+            Instaluje zależności z pliku setup.py.
+
+            Args:
+                file_path: Ścieżka do pliku setup.py.
+                force: Czy wymusić reinstalację istniejących zależności.
+
+            Returns:
+                True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                # Używamy pip do instalacji projektu w trybie deweloperskim
+                cmd = [sys.executable, "-m", "pip", "install"]
+
+                # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
+                if force:
+                    cmd.append("--force-reinstall")
+
+                # Dodajemy opcję -e i ścieżkę do katalogu projektu
+                directory = os.path.dirname(file_path)
+                cmd.extend(["-e", directory])
+
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+
+                if process.returncode != 0:
+                    logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
+                    return False
+
+                logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
+                return False
+
+        def _install_from_setup_cfg(file_path: str, force: bool = False) -> bool:
+            """
+            Instaluje zależności z pliku setup.cfg.
+
+            Args:
+                file_path: Ścieżka do pliku setup.cfg.
+                force: Czy wymusić reinstalację istniejących zależności.
+
+            Returns:
+                True, jeśli wszystkie zależności zostały zainstalowane pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                # Używamy pip do instalacji projektu w trybie deweloperskim
+                cmd = [sys.executable, "-m", "pip", "install"]
+
+                # Dodajemy opcję --force-reinstall, jeśli wybrano wymuszenie
+                if force:
+                    cmd.append("--force-reinstall")
+
+                # Dodajemy opcję -e i ścieżkę do katalogu projektu
+                directory = os.path.dirname(file_path)
+                cmd.extend(["-e", directory])
+
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+
+                if process.returncode != 0:
+                    logger.error(f"Błąd podczas instalacji zależności z {file_path}: {process.stderr}")
+                    return False
+
+                logger.info(f"Wszystkie zależności z {file_path} zostały zainstalowane pomyślnie.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas instalacji zależności z {file_path}: {str(e)}")
+                return False
+
+        def create_virtual_env(path: str, python_version: Optional[str] = None) -> bool:
+            """
+            Tworzy wirtualne środowisko Pythona.
+
+            Args:
+                path: Ścieżka do katalogu, w którym ma zostać utworzone wirtualne środowisko.
+                python_version: Wersja Pythona (opcjonalne).
+
+            Returns:
+                True, jeśli wirtualne środowisko zostało utworzone pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                logger.info(f"Tworzenie wirtualnego środowiska w {path}...")
+
+                # Sprawdzamy, czy mamy zainstalowany moduł venv
+                try:
+                    import venv
+                except ImportError:
+                    logger.error("Brak modułu venv. Instaluję...")
+
+                    # Instalujemy moduł venv
+                    cmd_install = [sys.executable, "-m", "pip", "install", "virtualenv"]
+
+                    process_install = subprocess.run(
+                        cmd_install,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True
+                    )
+
+                    if process_install.returncode != 0:
+                        logger.error(f"Błąd podczas instalacji modułu virtualenv: {process_install.stderr}")
+                        return False
+
+                # Tworzymy wirtualne środowisko
+                if python_version:
+                    # Używamy określonej wersji Pythona
+                    cmd = ["virtualenv", "-p", f"python{python_version}", path]
+                else:
+                    # Używamy bieżącej wersji Pythona
+                    cmd = ["virtualenv", path]
+
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+
+                if process.returncode != 0:
+                    logger.error(f"Błąd podczas tworzenia wirtualnego środowiska: {process.stderr}")
+                    return False
+
+                logger.info(f"Wirtualne środowisko zostało utworzone pomyślnie w {path}.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas tworzenia wirtualnego środowiska: {str(e)}")
+                return False
+
+        def activate_virtual_env(path: str) -> bool:
+            """
+            Aktywuje wirtualne środowisko Pythona w bieżącym procesie.
+
+            Args:
+                path: Ścieżka do katalogu z wirtualnym środowiskiem.
+
+            Returns:
+                True, jeśli wirtualne środowisko zostało aktywowane pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                logger.info(f"Aktywowanie wirtualnego środowiska w {path}...")
+
+                # Sprawdzamy system operacyjny
+                if platform.system() == "Windows":
+                    # Windows
+                    activate_script = os.path.join(path, "Scripts", "activate.bat")
+                else:
+                    # Unix
+                    activate_script = os.path.join(path, "bin", "activate")
+
+                # Sprawdzamy, czy skrypt aktywacyjny istnieje
+                if not os.path.isfile(activate_script):
+                    logger.error(f"Brak skryptu aktywacyjnego: {activate_script}")
+                    return False
+
+                # Aktywujemy wirtualne środowisko
+                if platform.system() == "Windows":
+                    # Windows - aktywujemy przez modyfikację zmiennych środowiskowych
+                    bin_dir = os.path.join(path, "Scripts")
+
+                    # Modyfikujemy PATH
+                    os.environ["PATH"] = f"{bin_dir};{os.environ.get('PATH', '')}"
+
+                    # Modyfikujemy VIRTUAL_ENV
+                    os.environ["VIRTUAL_ENV"] = path
+
+                    # Usuwamy PYTHONHOME, jeśli istnieje
+                    if "PYTHONHOME" in os.environ:
+                        del os.environ["PYTHONHOME"]
+                else:
+                    # Unix - aktywujemy przez modyfikację zmiennych środowiskowych
+                    bin_dir = os.path.join(path, "bin")
+
+                    # Modyfikujemy PATH
+                    os.environ["PATH"] = f"{bin_dir}:{os.environ.get('PATH', '')}"
+
+                    # Modyfikujemy VIRTUAL_ENV
+                    os.environ["VIRTUAL_ENV"] = path
+
+                    # Usuwamy PYTHONHOME, jeśli istnieje
+                    if "PYTHONHOME" in os.environ:
+                        del os.environ["PYTHONHOME"]
+
+                logger.info(f"Wirtualne środowisko zostało aktywowane pomyślnie.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas aktywowania wirtualnego środowiska: {str(e)}")
+                return False
+
+        def run_script_in_virtual_env(venv_path: str, script_path: str, args: Optional[List[str]] = None) -> bool:
+            """
+            Uruchamia skrypt Python w wirtualnym środowisku.
+
+            Args:
+                venv_path: Ścieżka do katalogu z wirtualnym środowiskiem.
+                script_path: Ścieżka do skryptu Python.
+                args: Lista argumentów dla skryptu (opcjonalne).
+
+            Returns:
+                True, jeśli skrypt został uruchomiony pomyślnie, False w przeciwnym razie.
+            """
+            try:
+                logger.info(f"Uruchamianie skryptu {script_path} w wirtualnym środowisku {venv_path}...")
+
+                # Sprawdzamy system operacyjny
+                if platform.system() == "Windows":
+                    # Windows
+                    python_executable = os.path.join(venv_path, "Scripts", "python.exe")
+                else:
+                    # Unix
+                    python_executable = os.path.join(venv_path, "bin", "python")
+
+                # Sprawdzamy, czy interpreter Pythona istnieje
+                if not os.path.isfile(python_executable):
+                    logger.error(f"Brak interpretera Pythona: {python_executable}")
+                    return False
+
+                # Przygotowujemy polecenie
+                cmd = [python_executable, script_path]
+
+                # Dodajemy argumenty, jeśli podano
+                if args:
+                    cmd.extend(args)
+
+                # Uruchamiamy skrypt
+                process = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True
+                )
+
+                if process.returncode != 0:
+                    logger.error(f"Błąd podczas uruchamiania skryptu: {process.stderr}")
+                    return False
+
+                logger.info(f"Skrypt został uruchomiony pomyślnie.")
+                return True
+
+            except Exception as e:
+                logger.error(f"Błąd podczas uruchamiania skryptu: {str(e)}")
+                return False#!/usr/bin/env python3
+        # -*- coding: utf-8 -*-

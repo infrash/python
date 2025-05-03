@@ -1,7 +1,3 @@
-```
-# Struktura pakietu infrash
-
-```
 infrash/
 ├── .github/
 │   └── workflows/
@@ -15,10 +11,33 @@ infrash/
 │       ├── core/
 │       │   ├── __init__.py
 │       │   ├── runner.py           # Główny moduł runnera
-│       │   ├── installer.py        # Instalacja i zarządzanie pakietami
-│       │   ├── diagnostics.py      # Diagnozowanie problemów
-│       │   ├── repair.py           # Naprawa problemów
-│       │   └── config.py           # Zarządzanie konfiguracją
+│       │   ├── diagnostics/        # Podzielony moduł diagnostyczny
+│       │   │   ├── __init__.py
+│       │   │   ├── base.py
+│       │   │   ├── filesystem.py
+│       │   │   ├── permissions.py
+│       │   │   ├── dependencies.py
+│       │   │   ├── configuration.py
+│       │   │   ├── repository.py
+│       │   │   ├── networking.py
+│       │   │   ├── resources.py
+│       │   │   ├── logs.py
+│       │   │   ├── database.py
+│       │   │   ├── process.py
+│       │   │   ├── script.py
+│       │   │   ├── asyncio.py
+│       │   │   ├── connection.py
+│       │   │   └── hardware.py
+│       │   ├── repair/             # Podzielony moduł naprawczy
+│       │   │   ├── __init__.py
+│       │   │   ├── base.py
+│       │   │   ├── solutions.py
+│       │   │   ├── execution.py
+│       │   │   ├── filesystem.py
+│       │   │   ├── permissions.py
+│       │   │   ├── dependencies.py
+│       │   │   └── configuration.py
+│       │   └── installer.py        # Moduł instalatora
 │       ├── repo/
 │       │   ├── __init__.py
 │       │   ├── git.py              # Operacje na repozytoriach git
@@ -26,8 +45,13 @@ infrash/
 │       │   └── clone.py            # Klonowanie repozytoriów
 │       ├── system/
 │       │   ├── __init__.py
+│       │   ├── os_detect/          # Podzielony moduł wykrywania systemu
+│       │   │   ├── __init__.py
+│       │   │   ├── base.py
+│       │   │   ├── package_manager.py
+│       │   │   ├── installation.py
+│       │   │   └── utilities.py
 │       │   ├── dependency.py       # Zarządzanie zależnościami
-│       │   ├── os_detect.py        # Wykrywanie systemu operacyjnego
 │       │   ├── package_manager.py  # Obsługa menedżerów pakietów
 │       │   └── service.py          # Zarządzanie usługami systemowymi
 │       ├── utils/
@@ -65,4 +89,3 @@ infrash/
 ├── pyproject.toml
 ├── setup.py
 └── README.md
-```

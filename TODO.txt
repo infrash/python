@@ -1,5 +1,28 @@
-stworz od nowa i podziel na modularne elementy
-src/infrash/core/diagnostics.py
-src/infrash/core/repair.py
-src/infrash/system/os_detect.py
-na mniejsze pliki w markdown
+w plikach examples pokaz przyklad z polaczeniem z RPI w celu naprawy srodowiska python
+aby zainstalowac projekt z githuba:
+https://github.com/UnitApi/mcp.git
+lub
+git@github.com:UnitApi/mcp.git
+
+zainstaluj zaleznosci z requirements.txt jesli istnieje lub dla dowolnego innnego srodowiska ipaczek
+
+
+poszerz dzialanie runnera, aby instalowal zaleznosci i uruchamial  aplikacje i skrypty shell,  nodejs, python, php, static html poprzez podanie tylko adresu git,
+rozszerzenie powinni pobrac repo na wskazana maszyne (po adresie lub jako istnejacy client, server)
+powinna byc mozliwosc uruhcmiania automatycznie, zwlaszzca jesli sa tam rozne ci dla github lub gitlab,
+jesli sa jakies dane potrtzebne to interaktywnie user powinien byc zapytany, np. jesli chodzi o zmienne w .env do tego projektu git
+oraz gdy po uruchomieniu tej aplikacji z git cos nie dziala poprawnie, powinny byc logi i inteligentne podpowiedzi po analizie logow
+
+
+bazujac na aktualnym kodzie z folderu ./runner sprawdz czy ta implementacja runnera jest poprawna i przenies to co sie da do ./src/unitmcp aby przykładdy były proste
+a cała implementacja była w bibliotece, aby runner insttalowal zaleznosci i uruchamial  aplikacje i skrypty shell,  nodejs, python, php, static html poprzez podanie tylko adresu git,
+
+przenies src/unitmcp/orchestrator/README.md do examples/orchestrator/README.md i stworz kilka przykładów aoraz rozszerz dokumentacje
+
+
+
+zwieksz ilsoc przykladow dla kazdej komendy orchestratora w dokumenatcji: examples/orchestrator/README.md
+
+
+
+jak zanstalowac na rpi poprzez runner i orchestrator aplikacje web z elementami html, aby dziallo na skonfigurowanym przez runner porcie?

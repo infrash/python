@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-UnitMCP Detailed Integration Tests
+infrash Detailed Integration Tests
 
-This script performs detailed tests of the UnitMCP DSL and Claude 3.7 integration,
+This script performs detailed tests of the infrash DSL and Claude 3.7 integration,
 examining the actual implementation of each component to identify issues.
 """
 
@@ -64,7 +64,7 @@ def test_yaml_parser_implementation():
     logger.info("Testing YAML parser implementation...")
     
     try:
-        from unitmcp.dsl.formats.yaml_parser import YamlConfigParser
+        from infrash.dsl.formats.yaml_parser import YamlConfigParser
         
         # Create an instance
         parser = YamlConfigParser()
