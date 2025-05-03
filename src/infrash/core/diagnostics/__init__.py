@@ -5,7 +5,7 @@
 Moduł diagnostyczny infrash - inicjalizacja.
 """
 
-from infrash.core.diagnostics import Diagnostics, DiagnosticsEngine
+from infrash.core.diagnostics.diagnostics import Diagnostics, DiagnosticsEngine
 from infrash.core.diagnostics.filesystem import _check_filesystem, _check_permissions
 from infrash.core.diagnostics.dependencies import _check_dependencies
 from infrash.core.diagnostics.configuration import _check_configuration
