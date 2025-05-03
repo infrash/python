@@ -29,7 +29,7 @@ echo -e "${GREEN}Upgrading build tools...${NC}"
 python -m pip list | grep -E 'setuptools|wheel|build|twine'
 #python -m pip install --upgrade pip build twine
 ## update build tools
-pip install --upgrade pip setuptools wheel build twine
+pip install --upgrade pip setuptools wheel build twine || rm -rf venv && python -m venv venv && source venv/bin/activate && python -m pip install --upgrade pip build twine
 
 # Build the package
 echo -e "${GREEN}Building package...${NC}"

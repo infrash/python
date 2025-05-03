@@ -454,3 +454,142 @@ class DependencyResolver:
         except Exception as e:
             logger.error(f"Błąd podczas instalacji zależności: {str(e)}")
             return False
+    
+    def install_packages_one_by_one(self, requirements_path: str, venv_path: str = None) -> bool:
+        """
+        Instaluje pakiety z pliku requirements.txt jeden po drugim.
+        Przydatne, gdy instalacja zbiorcza zawiedzie.
+        
+        Args:
+            requirements_path: Ścieżka do pliku requirements.txt.
+            venv_path: Ścieżka do wirtualnego środowiska (opcjonalne).
+            
+        Returns:
+            True, jeśli instalacja większości pakietów się powiodła, False w przeciwnym razie.
+        """
+        try:
+            # Odczytaj plik requirements.txt
+            with open(requirements_path, 'r') as f:
+                requirements = f.readlines()
+            
+            packages = []
+            for line in requirements:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    packages.append(line)
+            
+            if not packages:
+                logger.warning("Brak pakietów do zainstalowania")
+                return False
+            
+            logger.info(f"Instalacja {len(packages)} pakietów jeden po drugim...")
+            success_count = 0
+            
+            for package in packages:
+                try:
+                    if self.remote and self.ssh_client:
+                        # Instalacja na zdalnym urządzeniu
+                        if venv_path:
+                            cmd = f"source {venv_path}/bin/activate && "
+                        else:
+                            cmd = ""
+                        
+                        cmd += f"pip install {package}"
+                        
+                        stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+                        exit_code = stdout.channel.recv_exit_status()
+                        
+                        if exit_code == 0:
+                            logger.info(f"Pakiet {package} został zainstalowany pomyślnie")
+                            success_count += 1
+                        else:
+                            error = stderr.read().decode()
+                            logger.warning(f"Błąd podczas instalacji pakietu {package}: {error}")
+                            
+                            # Spróbuj znaleźć alternatywną wersję pakietu
+                            match = re.match(r'^([a-zA-Z0-9_.-]+)([<>=!~]+)([a-zA-Z0-9_.-]+)(.*)$', package)
+                            if match:
+                                package_name = match.group(1)
+                                operator = match.group(2)
+                                package_version = match.group(3)
+                                rest = match.group(4)
+                                
+                                if operator == '==':
+                                    closest_version = self.find_closest_version(package_name, package_version)
+                                    
+                                    if closest_version and closest_version != package_version:
+                                        alternative_package = f"{package_name}=={closest_version}{rest}"
+                                        logger.info(f"Próba instalacji alternatywnej wersji: {alternative_package}")
+                                        
+                                        cmd = f"pip install {alternative_package}"
+                                        if venv_path:
+                                            cmd = f"source {venv_path}/bin/activate && {cmd}"
+                                        
+                                        stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+                                        exit_code = stdout.channel.recv_exit_status()
+                                        
+                                        if exit_code == 0:
+                                            logger.info(f"Alternatywna wersja pakietu {alternative_package} została zainstalowana pomyślnie")
+                                            success_count += 1
+                                        else:
+                                            error = stderr.read().decode()
+                                            logger.warning(f"Błąd podczas instalacji alternatywnej wersji pakietu {alternative_package}: {error}")
+                    else:
+                        # Instalacja lokalnie
+                        cmd = [sys.executable, "-m", "pip", "install", package]
+                        
+                        process = subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True
+                        )
+                        
+                        if process.returncode == 0:
+                            logger.info(f"Pakiet {package} został zainstalowany pomyślnie")
+                            success_count += 1
+                        else:
+                            logger.warning(f"Błąd podczas instalacji pakietu {package}: {process.stderr}")
+                            
+                            # Spróbuj znaleźć alternatywną wersję pakietu
+                            match = re.match(r'^([a-zA-Z0-9_.-]+)([<>=!~]+)([a-zA-Z0-9_.-]+)(.*)$', package)
+                            if match:
+                                package_name = match.group(1)
+                                operator = match.group(2)
+                                package_version = match.group(3)
+                                rest = match.group(4)
+                                
+                                if operator == '==':
+                                    closest_version = self.find_closest_version(package_name, package_version)
+                                    
+                                    if closest_version and closest_version != package_version:
+                                        alternative_package = f"{package_name}=={closest_version}{rest}"
+                                        logger.info(f"Próba instalacji alternatywnej wersji: {alternative_package}")
+                                        
+                                        alt_cmd = [sys.executable, "-m", "pip", "install", alternative_package]
+                                        
+                                        alt_process = subprocess.run(
+                                            alt_cmd,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            universal_newlines=True
+                                        )
+                                        
+                                        if alt_process.returncode == 0:
+                                            logger.info(f"Alternatywna wersja pakietu {alternative_package} została zainstalowana pomyślnie")
+                                            success_count += 1
+                                        else:
+                                            logger.warning(f"Błąd podczas instalacji alternatywnej wersji pakietu {alternative_package}: {alt_process.stderr}")
+                except Exception as e:
+                    logger.warning(f"Błąd podczas instalacji pakietu {package}: {str(e)}")
+            
+            # Jeśli zainstalowano przynajmniej połowę pakietów, uznaj to za sukces
+            if success_count >= len(packages) / 2:
+                logger.info(f"Zainstalowano {success_count}/{len(packages)} pakietów")
+                return True
+            else:
+                logger.error(f"Zainstalowano tylko {success_count}/{len(packages)} pakietów")
+                return False
+        except Exception as e:
+            logger.error(f"Błąd podczas instalacji pakietów jeden po drugim: {str(e)}")
+            return False

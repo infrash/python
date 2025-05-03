@@ -124,7 +124,7 @@ class RemoteManager:
             logger.error(f"Błąd podczas wykonywania polecenia: {str(e)}")
             return False, "", str(e)
     
-    def setup_environment(self, ssh_client, repo_url, branch=None, install_deps=True, max_retries=3):
+    def setup_environment(self, ssh_client, repo_url, branch=None, install_deps=True, resolve_deps=False, max_retries=3):
         """
         Konfiguruje środowisko na zdalnym hoście, w tym klonowanie repozytorium i instalację zależności.
 
@@ -133,6 +133,7 @@ class RemoteManager:
             repo_url: URL repozytorium do sklonowania
             branch: Gałąź do sklonowania (opcjonalnie)
             install_deps: Czy instalować zależności
+            resolve_deps: Czy automatycznie rozwiązywać konflikty wersji zależności
             max_retries: Maksymalna liczba prób dla operacji sieciowych
 
         Returns:
@@ -216,6 +217,17 @@ class RemoteManager:
                     requirements_path = stdout.strip()
                     logger.info(f"Znaleziono plik requirements.txt: {requirements_path}")
                     
+                    if resolve_deps:
+                        # Przetwórz plik requirements.txt, aby rozwiązać konflikty wersji
+                        logger.info("Przetwarzanie pliku requirements.txt, aby rozwiązać konflikty wersji...")
+                        success, processed_path = dependency_resolver.process_requirements_file(requirements_path)
+                        
+                        if success:
+                            logger.info(f"Plik requirements.txt został przetworzony: {processed_path}")
+                            requirements_path = processed_path
+                        else:
+                            logger.warning("Nie udało się przetworzyć pliku requirements.txt, używam oryginalnego pliku")
+                    
                     # Instaluj zależności z obsługą ponownych prób
                     if dependency_resolver.install_requirements_with_retry(
                         requirements_path, 
@@ -224,7 +236,14 @@ class RemoteManager:
                         logger.info("Zależności zostały zainstalowane pomyślnie")
                     else:
                         logger.warning("Wystąpiły problemy podczas instalacji zależności")
-                        # Kontynuuj mimo problemów, niektóre pakiety mogły zostać zainstalowane
+                        
+                        # Spróbuj zainstalować pakiety jeden po drugim
+                        logger.info("Próba instalacji pakietów jeden po drugim...")
+                        if dependency_resolver.install_packages_one_by_one(requirements_path):
+                            logger.info("Zależności zostały zainstalowane pojedynczo")
+                        else:
+                            logger.warning("Nie udało się zainstalować wszystkich zależności")
+                            # Kontynuuj mimo problemów, niektóre pakiety mogły zostać zainstalowane
                 else:
                     logger.warning("Nie znaleziono pliku requirements.txt")
             
@@ -235,38 +254,49 @@ class RemoteManager:
             logger.error(f"Błąd podczas konfiguracji środowiska: {str(e)}")
             return False
 
-    def deploy(self, host, username, password=None, key_filename=None, repo_url=None, 
-               branch=None, install_deps=True, retry_count=3, retry_delay=5):
+    def deploy(self, hostname, username, password=None, key_filename=None, port=22, repo_url=None, 
+               branch=None, install_deps=True, resolve_deps=False, max_retries=3):
         """
         Wdraża kod na zdalnym urządzeniu.
 
         Args:
-            host: Adres hosta zdalnego
+            hostname: Adres hosta zdalnego
             username: Nazwa użytkownika do logowania
             password: Hasło do logowania (opcjonalnie)
             key_filename: Ścieżka do klucza SSH (opcjonalnie)
+            port: Port SSH (domyślnie 22)
             repo_url: URL repozytorium do sklonowania (opcjonalnie)
             branch: Gałąź do sklonowania (opcjonalnie)
             install_deps: Czy instalować zależności
-            retry_count: Liczba prób połączenia
-            retry_delay: Opóźnienie między próbami w sekundach
+            resolve_deps: Czy automatycznie rozwiązywać konflikty wersji zależności
+            max_retries: Liczba prób połączenia i operacji sieciowych
 
         Returns:
             bool: True, jeśli wdrożenie się powiodło, False w przeciwnym razie
         """
         try:
-            # Nawiąż połączenie SSH
-            ssh_client = self.connect(
-                host, 
-                username, 
-                password=password, 
-                key_filename=key_filename,
-                retry_count=retry_count,
-                retry_delay=retry_delay
-            )
+            # Nawiąż połączenie SSH z obsługą ponownych prób
+            retry_delay = 5
+            ssh_client = None
+            
+            for attempt in range(max_retries):
+                try:
+                    ssh_client = self.connect(
+                        hostname, 
+                        username, 
+                        password=password, 
+                        key_filename=key_filename,
+                        port=port
+                    )
+                    break
+                except Exception as e:
+                    logger.warning(f"Próba {attempt+1}/{max_retries} połączenia nie powiodła się: {str(e)}")
+                    
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay * (attempt + 1))  # Zwiększaj czas oczekiwania z każdą próbą
             
             if not ssh_client:
-                logger.error("Nie udało się nawiązać połączenia SSH")
+                logger.error("Nie udało się nawiązać połączenia SSH po wielu próbach")
                 return False
             
             try:
@@ -277,7 +307,8 @@ class RemoteManager:
                         repo_url, 
                         branch=branch, 
                         install_deps=install_deps,
-                        max_retries=retry_count
+                        resolve_deps=resolve_deps,
+                        max_retries=max_retries
                     ):
                         logger.error("Nie udało się skonfigurować środowiska")
                         ssh_client.close()
