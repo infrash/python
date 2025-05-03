@@ -1,3 +1,11 @@
+w folderach:
+./tools
+./udpate
+
+są przykłądowe rozwiązania, zaimplementuj je wszystkie do celow rozwiązaywania problemów i poniżej przedstawionych zadań jakie ma realizować
+podziel je na podfoldery, aby sprecyzowac platformę jeśli są dedykowane i problemy jakie rozwiazanują
+
+
 w plikach examples pokaz przyklad z polaczeniem z RPI w celu naprawy srodowiska python
 aby zainstalowac projekt z githuba:
 https://github.com/UnitApi/mcp.git
@@ -26,3 +34,50 @@ zwieksz ilsoc przykladow dla kazdej komendy orchestratora w dokumenatcji: exampl
 
 
 jak zanstalowac na rpi poprzez runner i orchestrator aplikacje web z elementami html, aby dziallo na skonfigurowanym przez runner porcie?
+
+
+do naprawiania w przyszlosci uzywaj wektoroweych metod zorientowanych na szybkie drzewo decyzyjne zwiazaane
+z inteligentnym przelcizaniem prawdopodobienstwa rozwiazania, zwklaszcza gdy czeste zmiany nic nie wnoszą
+stworz liste mozliwych algroytmow, ktore w innych roziwzaniach pozwalaja, znajdz biblitoeki, ktore by pomogły z github w szybszej diagnostyce naprwi ei realizacji celow tego projektu
+
+
+
+
+stworzyłem proste rozwiązaanie do celow prezentacji jak powinien dzialac runner, oczywisceie zamiast pllikow powinno sie uzywac klienta z paczki src/infrash
+
+remote.py
+gitrunner.py
+testpi.py
+
+ pokazujące jak powinen  działać runner, jednak nie jest on inteligentny, powinien sam zdiagnozowac ze nie jest w nim zainstalowane paramiko i je sam zainstalowac
+dodatkowo gdy napotkał błąd połączenia: 2025-05-03 21:34:28,859 - __main__ - ERROR - Błąd podczas łączenia z Raspberry Pi: [Errno None] Unable to connect to port 22 on 192.168.1.154
+powinien zdiagnozować że problemem jest adres IP w sieci, bo taki nie istnieje a sieć ma numery 192.168.188.0/24 a nie 192.168.1.0/24
+na konec przy napotkaniu błędu w klonowaniu: 2025-05-03 21:35:26,415 - __main__ - ERROR - Błąd podczas klonowania repozytorium: fatal: destination path 'mcp' already exists and is not an empty directory.
+repozytorium powinien, stworzyć nowy folder w którym będzie projekt i zapisać parametry wszystkich danych w pliku .env lokalnie i zdalnie
+aby porzy nastepnym polaczeniu mial informacje jakie jest srodowisko i jakie parametry były ustawione
+
+
+.13/site-packages (from cryptography>=3.3->paramiko) (1.17.1)
+Requirement already satisfied: pycparser in ./venv/lib64/python3.13/site-packages (from cffi>=1.12->cryptography>=3.3->paramiko) (2.22)
+Using cached paramiko-3.5.1-py3-none-any.whl (227 kB)
+Using cached bcrypt-4.3.0-cp39-abi3-manylinux_2_34_x86_64.whl (284 kB)
+Using cached PyNaCl-1.5.0-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl (856 kB)
+Installing collected packages: bcrypt, pynacl, paramiko
+Successfully installed bcrypt-4.3.0 paramiko-3.5.1 pynacl-1.5.0
+(venv) (base) [tom@devop infrash]$ python remote.py --host 192.168.1.154 --user pi --password pi --repo https://github.com/UnitApi/mcp.git
+2025-05-03 21:34:25,728 - __main__ - INFO - Łączenie z 192.168.1.154 jako pi...
+2025-05-03 21:34:28,859 - __main__ - ERROR - Błąd podczas łączenia z Raspberry Pi: [Errno None] Unable to connect to port 22 on 192.168.1.154
+2025-05-03 21:34:28,859 - __main__ - ERROR - Nie udało się połączyć z Raspberry Pi. Kończenie działania.
+(venv) (base) [tom@devop infrash]$ python remote.py --host 192.168.188.154 --user pi --password pi --repo https://github.com/UnitApi/mcp.git
+2025-05-03 21:35:06,004 - __main__ - INFO - Łączenie z 192.168.188.154 jako pi...
+2025-05-03 21:35:06,083 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_7.9p1)
+2025-05-03 21:35:06,245 - paramiko.transport - INFO - Authentication (publickey) successful!
+2025-05-03 21:35:06,245 - __main__ - INFO - Połączenie SSH nawiązane pomyślnie
+2025-05-03 21:35:06,245 - __main__ - INFO - Aktualizacja systemu Raspberry Pi...
+2025-05-03 21:35:23,404 - __main__ - INFO - Instalacja zależności systemowych...
+2025-05-03 21:35:26,256 - __main__ - INFO - Klonowanie repozytorium https://github.com/UnitApi/mcp.git...
+2025-05-03 21:35:26,415 - __main__ - ERROR - Błąd podczas klonowania repozytorium: fatal: destination path 'mcp' already exists and is not an empty directory.
+
+2025-05-03 21:35:26,416 - __main__ - ERROR - Instalacja na Raspberry Pi nie powiodła się.
+2025-05-03 21:35:26,416 - __main__ - INFO - Połączenie SSH zamknięte
+

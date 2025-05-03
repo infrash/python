@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2025-05-03
+
+### Added
+- Changes in REMOTE.md
+- Changes in gitrunner.py
+- Changes in remote.py
+- Changes in run.bat
+- Changes in run.py
+- Changes in run.sh
+- Changes in src/infrash/core/diagnostics/configuration.py
+- Changes in testpi.py
+
+### Changed
+- Changes in src/infrash/core/installer.py
+- Changes in src/infrash/system/dependency.py
+- Changes in src/infrash/system/service.py
+
+### Fixed
+- Changes in src/infrash/core/config.py
+
 ## [0.1.3] - 2025-05-03
 
 ### Added

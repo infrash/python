@@ -1,0 +1,10 @@
+auto_repair: true
+diagnostic_level: basic
+environments:
+  development:
+    start_command: python app.py
+    stop_command: null
+  production:
+    start_command: gunicorn -w 4 app:app
+    stop_command: null
+name: test_path
